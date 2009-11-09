@@ -199,6 +199,12 @@ namespace comet {
 		typedef ::IUnknown base;
 	};
 
+    template<> struct comtype<ISequentialStream>
+	{
+		static const IID& uuid() throw() { return IID_ISequentialStream; }
+		typedef ::IUnknown base;
+	};
+
 
 	
 	//! C++ replacement of VC's __uuidof()

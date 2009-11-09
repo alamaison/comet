@@ -6613,7 +6613,7 @@ string Type::get_return_constructor(const string& r, bool cast_itf) const {
 				if (get_pointer_level() != 1) throw std::exception( std::string("Invalid return type [" + vt2string(vt) +"]").c_str());
 			}break;
 			case TLI::TKIND_ENUM:
-				s = (is_aliased_type()?"":"enum ");
+				s = (is_aliased_type()?"":"/*enum */ ");
 				s += nso.get_name_with_ns(ti);
 				s += "(" + r + ")";
 				break;
