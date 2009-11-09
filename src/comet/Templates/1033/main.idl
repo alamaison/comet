@@ -1,0 +1,8 @@
+[
+	uuid([! output TLB_UUID]),
+	version(1.0)
+]
+library [! output TLB_NAME]
+{
+	importlib("stdole2.tlb");
+};

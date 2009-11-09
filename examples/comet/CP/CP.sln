@@ -1,0 +1,28 @@
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CP", "CP.vcproj", "{D6310E71-81FB-4C75-8377-F8451BF63F6E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test", "test\test.vcproj", "{53DAED1B-0EDE-461C-AEC0-CE0D306E3AB8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D6310E71-81FB-4C75-8377-F8451BF63F6E} = {D6310E71-81FB-4C75-8377-F8451BF63F6E}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D6310E71-81FB-4C75-8377-F8451BF63F6E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D6310E71-81FB-4C75-8377-F8451BF63F6E}.Debug|Win32.Build.0 = Debug|Win32
+		{D6310E71-81FB-4C75-8377-F8451BF63F6E}.Release|Win32.ActiveCfg = Release|Win32
+		{D6310E71-81FB-4C75-8377-F8451BF63F6E}.Release|Win32.Build.0 = Release|Win32
+		{53DAED1B-0EDE-461C-AEC0-CE0D306E3AB8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{53DAED1B-0EDE-461C-AEC0-CE0D306E3AB8}.Debug|Win32.Build.0 = Debug|Win32
+		{53DAED1B-0EDE-461C-AEC0-CE0D306E3AB8}.Release|Win32.ActiveCfg = Release|Win32
+		{53DAED1B-0EDE-461C-AEC0-CE0D306E3AB8}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

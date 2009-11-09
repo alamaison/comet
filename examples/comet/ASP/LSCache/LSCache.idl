@@ -1,0 +1,41 @@
+// import "oaidl.idl";
+// import "ocidl.idl";  
+[
+	uuid(A8A534D3-B4C9-46d3-9355-D1828CB4415E),
+	version(1.0)
+]
+library LSCache
+{
+	importlib("stdole2.tlb");
+
+	[
+		uuid(D1855C2E-2275-4b80-9657-E1E6E26AFB64),
+		dual
+	]
+	interface ICache : IDispatch
+	{
+		[propget, id(DISPID_VALUE)] HRESULT Value([in] BSTR idx, [in] BSTR key, [out, retval] VARIANT *pVal);
+		[propput, id(DISPID_VALUE)] HRESULT Value([in] BSTR idx, [in] BSTR key, [in] VARIANT newVal);
+
+		[id(DISPID_NEWENUM), hidden] HRESULT EnumerateKeys([out, retval] IEnumVARIANT* *pVal);
+		[propget] HRESULT Count([out, retval] long* pVal);
+
+		[propput] HRESULT Expiry([in] long minutes);
+		[propget] HRESULT Expiry([out, retval] long* pv);
+
+		// Max number of elements in cache accepted. When adding beyond this limits, old elements will be removed to make room
+		// Set to -1 (default) for no limit
+		[propput] HRESULT MaxSize([in] long maxNumberOfElements);
+		[propget] HRESULT MaxSize([out, retval] long* pv);
+
+		HRESULT Remove([in] BSTR); 
+	};
+
+	[
+		uuid(1E5B58C4-3C6E-462b-9DC4-3DB169952B45)
+	]
+	coclass Cache
+	{
+		[default] interface ICache;
+	};
+};

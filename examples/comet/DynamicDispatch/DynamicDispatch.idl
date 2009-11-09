@@ -1,0 +1,19 @@
+// import "oaidl.idl";
+// import "ocidl.idl";  
+[
+	uuid(A8A534D3-B4C9-46d3-9355-D1828CB4415E),
+	version(1.0)
+]
+library CometExampleDynamicDispatch
+{
+	importlib("stdole2.tlb");
+
+	[
+		uuid(6D824864-9CBD-4b65-AC2F-198AB7591AA8)
+	]
+	coclass Demo
+	{
+		interface IDispatch;
+	};
+
+};

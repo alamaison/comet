@@ -1,0 +1,22 @@
+// Options for lint to reduce unwanted warnings related to
+// comet code directly, or to generated code.
+
+-esym(578,*::type_library)          // Don't warn about hiding global scope
+-esym(1712,connection_point)        // Don't warn about no default constructor.
+-esym(1509,wrap_t,connection_point_impl,interface_sa_traits)   // Allowed non-virtual destructors
+-efunc(*,wrap_t<*>::*)              // comet-generated code
+-dCOMET_NO_DECLSPEC_PROPERTY 
+-esym(1058,comet::*::detach,*::detach)// Suppress 'initializing a non-const reference with a non-lvalue'
+-esym(1774,comet::*)                // suppress use dynamic_cast to downcast polymorphic type
+-esym(1714,comet::*,comet::*::*)    // Suppress unreferenced
+-esym(1714,variant_t::*)            // Suppress unreferenced
+-esym(758,comet::*)                 // Supress unreferenced
+-esym(756,comet::*)                 // Supress unreferenced
+-esym(768,comet::*,comtype<*>::*)   // Supress unreferenced
+-esym(769,comet::*)                 // Supress unreferenced
+-esym(1716,I*::noimpl*)             // Supress unreferenced
++dCOMET_ASSERT=__assert             // Force define comet assert as an asserting function
+-esym(530,_result_)                 // Seems to be the only way to get this ignored (uninitialised variable)
+-esym(530,comet::wrap_t<*>::*,wrap_t<*>::*)      // Ignore uninitialised variables over COM calls.
+-esym(1764,comet::wrap_t<*>::*,wrap_t<*>::*)      // Ignore ref-parameter could be declared const ref in wrap_t
+-esym(530,*::comet::*::*,comet::*::*)           // Ignore uninit empty classes

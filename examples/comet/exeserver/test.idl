@@ -1,0 +1,27 @@
+// import "oaidl.idl";
+// import "ocidl.idl";  
+[
+	uuid(F7EE64ED-F196-438f-931F-30F76080D8C6),
+	version(1.0)
+]
+library ExeTest
+{
+	importlib("stdole2.tlb");
+
+	[
+		uuid(1BB6478E-A28E-4499-83FA-F14E8D592299),
+		dual
+	]
+	interface ITest : IDispatch
+	{
+		HRESULT HelloWorld();
+	};
+
+	[
+		uuid(67B74749-F313-4f27-8264-5D9772882557)
+	]
+	coclass Test
+	{
+		[default] interface ITest;
+	};
+};

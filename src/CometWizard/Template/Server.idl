@@ -1,0 +1,12 @@
+import "oaidl.idl";
+import "ocidl.idl";  
+
+[
+	uuid($$TLIB_GUID$$),
+	version(1.0)
+]
+library $$ROOT$$Lib
+{
+	importlib("stdole2.tlb");
+
+};

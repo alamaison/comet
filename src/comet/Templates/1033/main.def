@@ -1,0 +1,9 @@
+; [! output PROJECT_NAME].def : Declares the module parameters.
+
+LIBRARY      "[! output PROJECT_NAME].DLL"
+
+EXPORTS
+	DllCanUnloadNow     PRIVATE
+	DllGetClassObject   PRIVATE
+	DllRegisterServer   PRIVATE
+	DllUnregisterServer	PRIVATE

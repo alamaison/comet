@@ -1,0 +1,70 @@
+/** \file bin\CometAutoExp.dll 
+	\page cometautoexpusage CometAutoExp Usage
+	\section cometaboutautoexp A brief description of AutoExp.Dat
+	For those who are unfamiliar with AutoExp.Dat, you are missing out on an
+	important debugging tool.  This file can be found in the MSDev98/bin
+	directory and describes how the debugger shows various classes and structs.
+	By default it contains a few of the Microsoft specific structs, however the
+	idea is that you can put in your own definitions for your own specific
+	type-libraries (like StlPort and Boost).
+
+	Be aware that MSVC compiler unwraps all typedefs, and you are not able to
+	add custom debug lines for integral types (which disallows BSTR, DATE). It also
+	means that template parameters must be specified as the unwrapped version -
+	for example \b wchar_t is in fact an internal typedef for <b>unsigned short</b>.
+
+	The simpler forms are useful, and allows some simple definitions to be added like
+	these for comet::com_ptr and comet::currency_t:
+	\code
+	comet::com_ptr<*>=<ptr_>
+	comet::currency_t= <cy_.int64/10000>.<cy_.int64/1000%10><cy_.int64/100%10><cy_.int64/10%10><cy_.int64%10>
+	\endcode
+	Unfortunately, though, about the only documentation for AutoExp.Dat exists
+	inside the file itself, which misses out a feature that really allow us to
+	display some useful information about types.
+
+	This feature allows us to create a custom dll that provides functions to
+	explore memory and output a descriptive string.  To use it, there is a directive
+	$ADDIN(dllname.dll,Function_Name).
+
+	The functions are simply dll exports and must have a specific interface.  They are
+	unable to execute code in the debug target, and actually appear to run in a separate
+	thread. Also note that the dll is loaded and unloaded for each call made to it, so care
+	should be taken to keep it reasonably small!
+
+	\section cometautoexports CometAutoExp Exports
+	There is a sample AutoExp.dat in src\\CometAutoExp directory of comet which contains all
+	the information needed to use the functions, however here is brief description of them:
+
+	<table>
+	<tr><th>Function</th>               <th>Description</th></tr>
+	<tr><td>DateTime_Evaluate</td>      <td>Displays datetime_t with status as Date and Time</td></tr>
+	<tr><td>DateOnly_Evaluate</td>      <td>Displays dateonly_t with status as a Date (also day number of the year and day of week).</td></tr>
+	<tr><td>Period_Evaluate</td>        <td>Displays a period as hours/minutes/seconds</td></tr>
+	<tr><td>OLEDateTime_Eval</td>       <td>Displays COleDateTime as Date and Time (including status)</td></tr>
+	<tr><td>OLEDateTimeSpan_Eval</td>   <td>Displays COleDateTimeSpan as hours/minutes/seconds (including status)</td></tr>
+	<tr><td>SAFEARRAY_Eval</td>         <td>Describes the size and type of a safearray and if there a 20 or fewer elements, the contents</td></tr>
+	<tr><td>PSAFEARRAY_Eval</td>        <td>For use with safearray_t<*> - Similar to the above but dereferences the pointer first</td></tr>
+	<tr><td>VARIANT_Eval</td>           <td>Displays the type and contents of a variant (including safearrays as above)</td></tr>
+	<tr><td>DISPPARAMS_Eval</td>        <td>Display the type and contents for the IDispatch DISPPARAMS type</td></tr>
+	<tr><td>BSTR_Eval</td>              <td>Properly show a BSTR (for bstr_t, _bstr_t, CComBSTR), including embedded NULLS</td></tr>
+	<tr><td>wstring_Eval</td>           <td>Properly show a STLPort std::wstring including embedded NULLS (uses begin, end pointers)</td></tr>
+	<tr><td>string_Eval</td>            <td>Properly show a STLPort std::string including embedded NULLS</td></tr>
+	<tr><td>ms_wstring_Eval</td>        <td>Properly show a MS std::wstring including embedded NULLS (uses begin, length)</td></tr>
+	<tr><td>ms_string_Eval</td>         <td>Properly show a MS std::string including embedded NULLS</td></tr>
+	</table>
+
+	\section cometautoexpsamples CometAutoExp Samples
+
+	Here is a sample of additions to make to AutoExp.dat which is found in the
+	same directory as MSDev.exe.
+	\dontinclude AutoExp.dat
+	\until End Comet
+	Some of the following are replacements for existing entries in AutoExp.dat which 
+	should be commented out:
+	\until End MicroSoft
+	These are some useful additions for users of StlPort:
+	\until End StlPort
+
+
+ */

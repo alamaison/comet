@@ -1,0 +1,205 @@
+/** \file bin\tlb2h.exe
+    \page tlb2husage Tlb2h Usage
+	\section wrappergen Wrapper Generation
+		The main usage of tlb2h is for generation of wrappers for a
+		type-library.
+
+		There are two main sub-usages, "server wrappers" for implementation
+		of a server, and "client wrappers" for when only the client wrappers are
+		required.
+
+		When client wrappers (\c -c) are specified, connection-point wrappers
+		are not generated, but the server wrappers \b are generated for all
+		interfaces being used as connection-point sinks.
+
+		<p>	\c tlb2h \e [options] \e {typelibraries}
+
+		<table>
+		  <tr><td>\c -c                         </td><td>Client wrappers (exclude server wrappers)</td></tr>
+		  <tr><td>\c -n                         </td><td>Include nutshell wrappers</td></tr>
+		  <tr><td>\c -o \e {directory}          </td><td>Specify output directory</td></tr>
+		  <tr><td>\c -r \e {namespace}          </td><td>Rename library namespace</td></tr>
+		  <tr><td>\c -F                         </td><td>Exclude foreign source implementations</td></tr>
+		  <tr><td>\c -h[+-]                     </td><td>Ouput/suppress html</td></tr>
+		  <tr><td>\c -H                         </td><td>Output only html</td></tr>
+		  <tr><td>\c -R \e {translate file}     </td><td>Specify namespace/symbol mapping file</td></tr>
+		  <tr><td>\c -x \e {symbol file}        </td><td>Exclude symbols in file</td></tr>
+		  <tr><td>\c -s[+-] \e {symbol file}    </td><td>Output only symbols in file.  '-s-' to reduce symbols stubs output. </td></tr>
+		  <tr><td>\c -L                         </td><td>Turn on \ref cometcalllogging for interface</td></tr>
+		  <tr><td>\c -v                         </td><td>Output version</td></tr>
+		  <tr><td>\c -C "{comment}"             </td><td>Set a comment to be
+		  inserted in the header files (also \@comment=)</td></tr>
+		</table>
+
+\subsection wrappergentransformat Translation File Format
+<p>Use either ';' or '#' at the beginning of the line to specify a comment.
+
+<p>Each translation appears on a separate line in the file separate by
+'=':
+
+	{OriginalSymbol}={RenamedSymbol}
+
+The symbol and namespace renaming \e does apply to the output filename as well
+as the namespace and  method names (before the Put/Get/PutRef/raw_ are applied).
+
+The {OriginalSymbol} can be a TypeLibrary, CoClass, Interface, Method, Struct,
+Struct member, Union, union member or Parameter.  It can also be of the form
+<i>{Interface/Method/Union}</i><b>.</b><i>{Member}</i> to specify that a
+particular method is renamed.  Useful for providing different implementations of
+methods with the same names from different coclasses.
+
+The special symbol <b>\@comment=</b> can be used to provide a comment to be placed
+in the header.
+
+\subsection wrappergensymbolformat Symbol File Format
+
+Symbol files are used with -x or -s to reduce the number of wrappers and
+interfaces output by tlb2h.  This is useful where only certain interfaces are
+required and where some of the interfaces are non-standard, or where only a
+small subset of the interfaces of a large typelibrary are required.
+
+Presently, only coclasses and interfaces apply to either -x or -s.
+
+By default, any interfaces/coclasses output, will cause any unrequired dependent interfaces
+to be output in 'stubbed' form.  This means that the struct/interface id is
+present, but vtable fillers are generated for the interface and the wrappers for
+com_ptr (wrap_t) are empty (with an appropriate comment).
+
+<p>Once again within the file, use either ';' or '#' at the beginning of the line to specify a comment.
+
+<p>Each symbol needs to be on a separate line, optionally prefixed by either '*' or
+'~'.
+
+<p>'*' before a symbol forces the server wrapper to be output even if -c is
+specified on the commandline. In '-x' mode, the symbol \b is output, and the 
+server wrapper generated.
+
+<p>'~' before a symbol means that a symbol is included, but that only a stub is
+generated for the symbol. This is useful for -s- and where the symbols are
+referenced by a another typelibrary but are not being used in the code.
+
+\section wizardmode Wizard Code Generation
+
+		<p>The second usage of tlb2h is 'Wizard' mode, which generates a code stub for
+		either specified or for all coclasses.
+
+		The output file is always \b appended to - the wizard will not overwrite code
+		already present!
+
+		<p>	\c tlb2h [\c -w[+]  \e coclass[{,coclass}] | \c -wi[+] \e interface[{,interface}] | \c -W[ci]] [-l] [\c -o \e outputfile] \e typelibrary
+
+		<table>
+		  <tr><td>\c -w[+] \e coclass[{,coclass}] </td><td>Specify coclasses to output coclass-stubs for.
+										  Use '-w+' to qualify types with namespaces</td></tr>
+		  <tr><td>\c -w[+] \e coclass[{,coclass}] </td><td>Specify coclasses to output coclass-stubs for.
+										  Use '-w+' to qualify types with namespaces</td></tr>
+		  <tr><td>\c -W[+]                  </td><td>Output all coclasses. '+' to qualify types with namespaces</td></tr>
+		  <tr><td>\c -Wc                    </td><td>Output class names only.</td>"
+		  <tr><td>\c -Wi                    </td><td>Output interface names only.</td>"
+		  <tr><td>\c -o \e {filename}       </td><td>Specify output file. Defaults to stdout.</td></tr>
+		  <tr><td>\c -l                     </td><td>Output library header.</td></tr>
+
+		</table>
+
+*/
+/** \page tlb2handidl IDL and Tlb2h
+\section tlb2hidlbrief Overview
+
+The type-library takes an important part in using both the client and server
+wrappers for Comet.  Tlb2h takes careful note of most of the attribtues that can
+be assigned to coclass, interface, dispinterface, enum, method and parameter
+definitions in order to provide a single point for that information to be kept.
+
+Especially when generating full server wrappers, where an \e idl file is
+generally involved, it is important to know just what many of the attributes can
+do for you.
+
+Many of the attributes are best described by the Microsoft documentation, as
+they are fairly integral to correct handling by inter-process and intra-process
+communication, however I will try and touch briefly on most of them.
+
+\section tlb2hidlattributes IDL Attributes
+
+\subsection tlb2hidlattributesgeneral General Attributes
+
+There are a couple of attributes that are applicable to most sections;
+\b uuid and \b helpstring. 
+
+The \b uuid attribute is applicable to all type, library and coclass definitions
+(this includes enum types), and is essential to interface definitions, library
+and coclass definitions.
+
+The \b helpstring attribute is quite useful and almost universally applicable,
+as it provides extra information to browsers that are geared for it.  The Tlb2h
+\ref wizardmode makes use of method \b helpstring attributes to provide a
+default comment.
+
+\subsection tlb2hidlattributestypelibrary Type Library Attributes
+
+In addition to \b uuid, tlb2h does take note of the \b version attributes,
+accessible via the \c type_library type namespace as \c major_version and \c minor_version
+enumerations.
+
+Also defined within the \c type_library type is a \link comet::make_list Type List \endlink
+specifying the coclass objects createable by the type library.
+
+\subsection tlb2hidlattributescoclass Coclass Attributes
+
+Again, \b uuid is essential to coclasses, but there are a number of other important
+attribtues, especially to the \ref wizardmode.  
+
+The attribute \c noncreatable is used to mark a coclass as not externally
+creatable, (and therefore not in the coclass list of the \e type_library). This
+is an extremely useful attribute as it allows you to provide a coclass
+definition that will be able to be used by \link comet::IProvideClassInfoImpl
+IProvideClassInfo \endlink to give clients of the library access to the
+interfaces and methods defined by the coclass.  Classes marked as
+\c noncreatable will also be provided with a different implementation by the
+\ref wizardmode.
+
+The \c aggregatable attribute does not affect the behaviour of the class
+directly, however it will cause the \ref wizardmode to use
+\link comet::aggregateable_coclass aggregateable_coclass \endlink instead of
+\link comet::coclass coclass \endlink as the base for the coclass, which will
+allow the coclass to be aggregated on creation.
+
+\subsection tlb2hidlattributesinterface Interface Attributes
+
+Interfaces support many attributes that are worth looking at.  Amongst these are
+\b dual, \b nonextensible, \b oleautomation, \b version and \b object.  The only
+attribute relevent to tlb2h for interfaces is \b uuid, which is essential.
+
+\subsection tlb2hidlattributesmethod Method and Property Attributes
+
+As mentioned above, the \b helpstring property is used by the \ref wizardmode.
+
+The property \c id, which is used to explicitly specify a dispatch id, is only
+made use of with pure dispatch interfaces (dispinterface). 
+
+In addition to that, \c propput, \c propputref and \c propget are used to
+identify properties on an interface. Of course all accessors for a particular
+property should have the same \c id.  With the generated wrappers, the property
+get method will have \b Get prepended to it, while if either (but not both) of \c propput
+and \c propputref, then the put method will have \b Put prepended to it.
+
+If both \c propput and \c propputref are specified for a property, then the
+\c propput method will have \b Put prepended to it, and the \c propputref method
+will have \b Putref prepended to it.
+
+\subsection tlb2hidlattributesparameter Parameter Attributes
+
+There are only really three attributes that are used here, \c in, \c out and
+\c retval.  Some combination of these should always be specified.
+
+The main combinations are <kbd>[in]</kbd>, <kbd>[in,out]</kbd>, <kbd>[out]</kbd>
+and <kbd>[out,retval></kbd>.
+
+One of the great things about comet is that the implementor of an interface can
+pretty much forget about exactly which combinations of these are used, as all
+memory management is handled by the wrappers.
+
+The parameter marked as \c retval will conveniently appear as the return value
+of the class.  The only issue so far with this is that there is no chance for 
+distinguishing between S_OK and S_FALSE return values.
+
+*/

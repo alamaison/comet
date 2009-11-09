@@ -1,0 +1,37 @@
+// import "oaidl.idl";
+// import "ocidl.idl";  
+[
+	uuid(6B71C6EA-0443-4137-9911-E1BDEBC89425),
+	version(1.0)
+]
+library CometExampleSafeArray
+{
+	importlib("stdole2.tlb");
+
+	[ uuid(53466D3E-9D91-477f-B979-2BA0A77A7937) ]
+	struct Point
+	{
+		int x;
+		int y;
+	};
+	
+	[
+		uuid(2FE11269-A73C-46db-AC0B-69E6D0381C92)
+	]
+	interface IFoo : IUnknown
+	{
+		[propget] HRESULT Array([out, retval] SAFEARRAY(struct Point)* pVal);
+		HRESULT Test1( [in] struct Point* p );
+		HRESULT Test2( [in, out] struct Point* p );
+		HRESULT Test3( [out] struct Point* p );
+	};
+
+/*	[
+		uuid(C111448C-EA00-4af0-8C33-A1417EAD7E12)
+	]
+	coclass Demo
+	{
+		[default] interface IFoo;
+	};
+*/
+};

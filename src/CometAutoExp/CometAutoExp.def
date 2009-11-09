@@ -1,0 +1,18 @@
+	LIBRARY   CometAutoExp
+	DESCRIPTION "Implements Custom Evaluator for comet"
+	EXPORTS
+
+	DateTime_Evaluate       @1
+	Period_Evaluate         @2
+	SAFEARRAY_Eval          @3
+	VARIANT_Eval            @4
+	DISPPARAMS_Eval         @5
+	PSAFEARRAY_Eval         @6
+	BSTR_Eval               @7
+	OLEDateTime_Eval        @8
+	OLEDateTimeSpan_Eval    @9
+	wstring_Eval            @10
+	string_Eval             @11
+	ms_wstring_Eval         @12
+	ms_string_Eval          @13
+	DateOnly_Evaluate       @14

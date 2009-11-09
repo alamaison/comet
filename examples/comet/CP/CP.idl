@@ -1,0 +1,119 @@
+//import "oaidl.idl";
+//import "ocidl.idl";  
+
+[
+	uuid(9F4A50B9-312D-4de4-B105-08BB6C8D3DE7),
+	version(1.0)
+]
+library CometExampleCP
+{
+	importlib("stdole2.tlb");
+
+	[ uuid(58DC81DD-A68F-4884-9CB9-5EA7623548B9) ]
+	struct TName
+	{
+		BSTR given;
+		BSTR family;
+		VARIANT var;
+		SAFEARRAY(DATE) calendar;
+
+		BYTE ID[16];
+	};
+
+	enum TestEnum1 { TE1 = 1 };
+	typedef enum TestEnum2 { TE2 = 1 } TestEnum2;
+	typedef enum { TE3 = 3 } TestEnum3;
+
+	enum Ees { E_1 = 1, E_2 = 2 };
+
+	[
+		uuid(6C63F71E-22D1-4159-A118-52C3020D3472),
+		dual
+	]
+	interface IStack : IDispatch
+	{
+		HRESULT Push([in] VARIANT newVal);
+		HRESULT Pop([out, retval] VARIANT* pVal);
+		[propget] HRESULT Size([out, retval] long* pVal);
+
+		HRESULT Test1([in] struct TName x, [in] GUID y);
+		HRESULT Test2([in] struct TName* x, [in] GUID* y);
+		HRESULT Test3([in, out] struct TName* x, [in, out] GUID* y);
+		HRESULT Test4a([out, retval] struct TName* x);
+		HRESULT Test4b([out, retval] GUID* x);
+		HRESULT Test5([out] struct TName* x, [out] GUID* y);
+
+		HRESULT Test6a([in, out] SAFEARRAY(BSTR)*);
+		HRESULT Test6b([in, out] SAFEARRAY(struct TName)*);
+
+		HRESULT Test7a([in] SAFEARRAY(BSTR));
+		HRESULT Test7b([in] SAFEARRAY(struct TName));
+
+		HRESULT Test8a([in] BSTR x, [in, out] BSTR* y, [out] BSTR* z, [out, retval] BSTR* pVal);
+		HRESULT Test8b([in] long x, [in, out] long* y, [out] long* z, [out, retval] long* pVal);
+		HRESULT Test8c([in] enum Ees x, [in, out] enum Ees* y, [out] enum Ees* z, [out, retval] enum Ees* pVal);
+
+		HRESULT Test9a([in] CURRENCY x, [in] DATE y);
+		HRESULT Test9b([in, out] CURRENCY* x, [in, out] DATE* y);
+		HRESULT Test9c([out] CURRENCY* x, [out] DATE* y);
+
+		HRESULT Test10([in, out] BSTR*, [in, out] IDispatch**, [in, out] IUnknown**, [in, out] IStack**, [in, out] VARIANT*, [in, out] long*, [in, out] float*);
+		HRESULT Test11([in, out] VARIANT_BOOL*);
+
+		[propget] HRESULT ClassSize([out, retval] long* pVal);
+	};
+
+	[
+		uuid(C4E8791A-4A7E-4f10-881E-2B24C3D4363B)
+	]
+	dispinterface DStackEvents
+	{
+	properties:
+	methods:
+		[id(1)] void OnChanged([in, out] enum Ees*);
+	};
+
+	[
+		uuid(115BAF91-5BC3-40d2-941A-FF770027264F)
+	]
+	coclass Stack 
+	{
+		interface IStack;
+		[source] dispinterface DStackEvents;
+	};
+
+	[
+		uuid(6E1E583E-363F-4a1a-AA32-603976E4CB59),
+		oleautomation
+	]
+	interface IFoo : IUnknown
+	{
+		HRESULT Test();
+	};
+
+	[
+		uuid(A051C967-76C7-472b-9AC3-79BD1630B540)
+	]
+	coclass Foo
+	{
+		[default] interface IFoo;
+	};
+
+	[
+		uuid(9206E2D3-A4D9-4b2a-A74A-76B103358848),
+		oleautomation
+	]
+	interface IBar : IUnknown
+	{
+		HRESULT Test2();
+	};
+
+	[
+		uuid(886A24B2-53D0-430c-AE80-7D96C858348E)
+	]
+	coclass Bar
+	{
+		[default] interface IBar;
+	};
+
+};

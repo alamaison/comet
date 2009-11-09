@@ -1,0 +1,26 @@
+[
+	uuid(5740B629-F65D-4753-979A-4191A8348D76),
+	version(1.0)
+]
+library CometExampleSaSort
+{
+	importlib("stdole2.tlb");
+
+	[
+		uuid(AA4BC69C-A050-4cf4-9B27-E4AA67542A4A),
+		dual
+	]
+	interface ISASort : IDispatch 
+	{
+		HRESULT Sort([in, out] SAFEARRAY(VARIANT)* array);
+	}
+
+	[
+		uuid(91D97E5C-79EA-4f9a-80D9-1D0549951340)
+	]
+	coclass SASort
+	{
+		[default] interface ISASort;
+	};		
+	
+};

@@ -1,0 +1,101 @@
+import "oaidl.idl";
+import "ocidl.idl";  
+
+[
+	uuid(CB3CC5BE-B687-494a-BC35-60340E2CEDA9),
+	version(1.0)
+]
+library CometExampleCollections
+{
+	importlib("stdole2.tlb");
+
+	struct Foo
+	{
+		BSTR name;
+		IUnknown* test;
+		VARIANT var;
+		SAFEARRAY(BSTR) sa;
+
+		double d;
+		float f;
+		int i1;
+		long l;
+		short s;
+		unsigned long ul;
+	};
+
+
+	[
+		uuid(CABE3C32-6CEE-4fe7-8E08-2648760B8C4F),
+		dual
+	]
+	interface IVariantSet : IDispatch
+	{
+		[propget] HRESULT Count( [out, retval] long* pVal );
+		[propget, id(DISPID_VALUE)] HRESULT Item( [in] VARIANT var, [out, retval] VARIANT_BOOL* pVal );
+		[propput, id(DISPID_VALUE)] HRESULT Item( [in] VARIANT var, [in] VARIANT_BOOL newVal );
+
+		[id(DISPID_NEWENUM), restricted] HRESULT Enum( [out, retval] IEnumVARIANT** pVal );
+	};
+
+	[
+		uuid(94441059-48CA-4fe2-A702-A170CD701739)
+	]
+	coclass VariantSet
+	{
+		[default] interface IVariantSet;
+	};
+
+	[
+		uuid(6996DF39-31EC-45c8-8339-7D6F29AB1C5B),
+		dual
+	]
+	interface IVariantMap : IDispatch
+	{
+		[propget, id(DISPID_VALUE)] HRESULT Item( [in] VARIANT idx, [out, retval] VARIANT* pVal );
+		[propput, id(DISPID_VALUE)] HRESULT Item( [in] VARIANT idx, [in] VARIANT newVal );
+
+		[id(DISPID_NEWENUM), restricted] HRESULT EnumKeys( [out, retval] IEnumVARIANT** pVal );
+	};
+
+	[
+		uuid(7DD9C4C1-E82D-4bea-9486-435153C3127D)
+	]
+	coclass VariantMap
+	{
+		[default] interface IVariantMap;
+	};
+
+	[
+		uuid(AA2C40A1-414A-467e-B0BA-EDA2FA575E84),
+		dual
+	]
+	interface IEnum : IDispatch
+	{
+		[id(DISPID_NEWENUM), restricted] HRESULT Enum( [out, retval] IEnumVARIANT** pVal );	
+	};
+
+	[
+		uuid(47AB05ED-530E-4663-8E22-7D8D8648D2D2),
+		dual
+	]
+	interface IObjectMap : IDispatch
+	{
+		[propget, id(DISPID_VALUE)] HRESULT Item( [in] BSTR idx, [out, retval] IDispatch** pVal );
+		[propput, id(DISPID_VALUE)] HRESULT Item( [in] BSTR idx, [in] IDispatch* newVal );
+
+		[propget] HRESULT Count( [out, retval] long* pVal );
+
+		[propget] HRESULT Keys( [out, retval] IEnum** pVal );
+		[propget] HRESULT Values( [out, retval] IEnum** pVal );
+	};
+
+	[
+		uuid(832648D2-12F3-48d5-9B9A-4200A4C12320)
+	]
+	coclass ObjectMap
+	{
+		[default] interface IObjectMap;
+	}
+
+};

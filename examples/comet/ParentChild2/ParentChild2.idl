@@ -1,0 +1,47 @@
+// import "oaidl.idl";
+// import "ocidl.idl";  
+[
+	uuid(6B71C6EA-0443-4137-9911-E1BDEBC89425),
+	version(1.0)
+]
+library CometExampleParentChild2
+{
+	importlib("stdole2.tlb");
+
+	interface IChild;
+
+	[
+		uuid(727C9B42-3191-4a79-BB4D-E75AAAAFBBC3),
+		dual
+	]
+	interface IParent : IUnknown
+	{
+		[propget] HRESULT Count([out, retval] long* pVal);
+		[id(-4)] HRESULT EnumChildren([out, retval] IEnumVARIANT** pVal);
+		[propget] HRESULT Child([in] BSTR idx, [out, retval] IChild** pVal);
+
+		HRESULT AddChild([in] BSTR name, [out, retval] IChild** pVal);
+	};
+
+	[
+		uuid(C2B74D4F-2D36-44ea-B94C-2EED04624925),
+		oleautomation
+	]
+	interface IChild : IUnknown
+	{
+		[propget] HRESULT Parent([out, retval] IParent** pVal);
+
+		[propput] HRESULT Value([in] VARIANT newVal);
+		[propget] HRESULT Value([out, retval] VARIANT* pVal);
+
+	};
+
+	[
+		uuid(F3BD4A18-CD95-41b8-8432-0EEB33972445)
+	]
+	coclass Demo
+	{
+		[default] interface IParent;
+	};
+
+};

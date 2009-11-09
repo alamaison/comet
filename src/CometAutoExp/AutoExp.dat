@@ -1,0 +1,38 @@
+; Comet additions
+comet::com_ptr<*>=<ptr_>
+comet::currency_t= <cy_.int64/10000>.<cy_.int64/1000%10><cy_.int64/100%10><cy_.int64/10%10><cy_.int64%10>
+comet::bstr_t=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,BSTR_Eval)
+comet::datetime_t=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,DateTime_Evaluate)
+comet::timeperiod_t=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,Period_Evaluate)
+comet::safearray_t<*>=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,PSAFEARRAY_Eval)
+SAFEARRAY=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,SAFEARRAY_Eval)
+tagSAFEARRAY=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,SAFEARRAY_Eval)
+DISPPARAMS=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,DISPPARAMS_Eval)
+tagDISPPARAMS=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,DISPPARAMS_Eval)
+comet::variant_t=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,VARIANT_Eval)
+comet::impl::datetime_base<long>=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,DateOnly_Evaluate)
+
+; -- End Comet additions
+
+; Replacement for the MicroSoft version.
+tagVARIANT=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,VARIANT_Eval)
+VARIANT=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,VARIANT_Eval)
+_bstr_t=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,BSTR_Eval)
+CComVariant=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,VARIANT_Eval)
+CComBSTR=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,BSTR_Eval)
+COleDateTime=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,OLEDateTime_Eval)
+COleDateTimeSpan=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,OLEDateTimeSpan_Eval)
+std::basic_string<char,std::char_traits<char>, std::allocator<char> >=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,ms_string_Eval)
+std::basic_string<unsigned short,std::char_traits<unsigned short>, std::allocator<unsigned short> >=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,ms_wstring_Eval)
+; -- End MicroSoft additions
+
+; StlPort additions
+_STL::_String_base<char,_STL::allocator<char> >=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,string_Eval)
+_STL::_String_base<unsigned short,_STL::allocator<unsigned short> >=$ADDIN(c:\lambdasoft\comet\bin\CometAutoExp.dll,wstring_Eval)
+_STL::basic_stringstream<*>=<_M_buf._M_str._M_start>
+_STL::basic_ostringstream<*>=<_M_buf._M_str._M_start>
+_STL::basic_istringstream<*>=<_M_buf._M_str._M_start>
+_STL::map<*>=<_M_t._M_node_count>
+; -- End StlPort additions
+
+

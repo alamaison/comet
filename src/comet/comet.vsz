@@ -1,0 +1,6 @@
+VSWIZARD 7.0
+Wizard=VsWizard.VsWizardEngine
+
+Param="WIZARD_NAME = comet"
+Param="ABSOLUTE_PATH = C:\lambdasoft\Projects\comet\src\comet"
+Param="FALLBACK_LCID = 1033"
