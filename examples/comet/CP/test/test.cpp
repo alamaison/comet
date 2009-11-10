@@ -2,7 +2,6 @@
 //
 
 #include "stdafx.h"
-#include <crtdbg.h>
 #include <set>
 #include <comet/threading.h>
 #include <exception>

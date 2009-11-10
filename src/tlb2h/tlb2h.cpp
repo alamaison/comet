@@ -647,7 +647,7 @@ public:
 		case ::VT_DATE:
 		{
 			std::ostringstream os;
-			os << "datetime_t(" << std::ios_base::showpoint << (double)var.date << ')';
+			os << "datetime_t(" << std::showpoint << (double)var.date << ')';
 			return os.str();
 		}
 

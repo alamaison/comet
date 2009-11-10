@@ -1,6 +1,5 @@
 #include "std.h"
 #include "stack.h"
-#include "Foo.h"
              
 using namespace comet;
 

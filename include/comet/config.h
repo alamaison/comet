@@ -22,8 +22,8 @@
 
 #define COMET_MAJOR_VER 1
 #define COMET_BUILDTYPE gamma
-#define COMET_MINOR_VER 32
-#define COMET_BUILD 20060708
+#define COMET_MINOR_VER 33
+#define COMET_BUILD 20091110
 
 #ifndef COMET_BUILD_VERSION_ONLY
 
@@ -195,7 +195,7 @@ __STL_END_NAMESPACE
 #endif
 #endif
 
-// Remove Microsoft's C++ profanity
+// Remove Microsoft's C++ macros
 #undef variant_t
 #undef bstr_t
 #undef com_cast

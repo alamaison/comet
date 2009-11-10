@@ -123,6 +123,10 @@ public:
 		b = true;
 	}
 
+	void Test12(const datetime_t&)
+	{
+	}
+
 	static TCHAR* get_progid() { return _T("CometExampleCP.Stack"); }
 };
 

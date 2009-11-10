@@ -60,6 +60,8 @@ library CometExampleCP
 		HRESULT Test10([in, out] BSTR*, [in, out] IDispatch**, [in, out] IUnknown**, [in, out] IStack**, [in, out] VARIANT*, [in, out] long*, [in, out] float*);
 		HRESULT Test11([in, out] VARIANT_BOOL*);
 
+		HRESULT Test12([in, defaultvalue(0)] DATE);
+
 		[propget] HRESULT ClassSize([out, retval] long* pVal);
 	};
 
