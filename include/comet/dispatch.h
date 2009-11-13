@@ -379,6 +379,22 @@ namespace comet {
 			if (FAILED(hr)) throw_com_error(raw(this), hr);
 			return call(id, a3, a2, a1, a0);
 		}
+		variant_t call(DISPID id, const variant_t& a4, const variant_t& a3, const variant_t& a2, const variant_t& a1, const variant_t& a0)
+		{
+			VARIANT result;
+			VARIANT vars[5]; vars[0] = a0.in(); vars[1] = a1.in(); vars[2] = a2.in(); vars[3] = a3.in(); vars[4] = a4.in();
+			DISPPARAMS disp = { vars, 0, 5, 0 };
+			HRESULT hr = raw(this)->Invoke(id, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_METHOD, &disp, &result, 0, 0);
+			if (FAILED(hr)) throw_com_error(raw(this), hr);
+			return auto_attach(result);
+		}
+		variant_t call(const wchar_t* name, const variant_t& a4, const variant_t& a3, const variant_t& a2, const variant_t& a1, const variant_t& a0)
+		{
+			DISPID id;
+			HRESULT hr = raw(this)->GetIDsOfNames(IID_NULL, const_cast<OLECHAR**>(&name), 1, LOCALE_USER_DEFAULT, &id);
+			if (FAILED(hr)) throw_com_error(raw(this), hr);
+			return call(id, a4, a3, a2, a1, a0);
+		}
 	};
 	/** \class dynamic_dispatch dispatch.h comet/dispatch.h
 	 * Implementation of a dynamic IDispatch, allowing methods to be added to
