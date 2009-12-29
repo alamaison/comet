@@ -287,7 +287,10 @@ namespace comet {
 			impl::interface_finder<ITF_LIST>::find_interface(this, iid, p);
 
 			if (!p) {
-				if (riid != IID_IUnknown) return E_NOINTERFACE;
+				if (riid != IID_IUnknown) {
+					*ppv = 0;
+					return E_NOINTERFACE;
+				}
 				p = get_unknown();
 //				p = static_cast< ::IUnknown* >(static_cast< typename ITF_LIST::head * >(this));
 			}
@@ -323,7 +326,10 @@ namespace comet {
 			impl::interface_finder<ITF_LIST>::find_interface(this, iid, p);
 
 			if (!p) {
-				if (riid != IID_IUnknown) return E_NOINTERFACE;
+				if (riid != IID_IUnknown) {
+					*ppv = 0;
+					return E_NOINTERFACE;
+				}
 //				p = cast_to_unknown(this);
 				p = static_cast< ::IUnknown* >(static_cast<typename ITF_LIST::head*>(this));
 			}
