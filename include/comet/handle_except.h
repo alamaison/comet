@@ -150,13 +150,16 @@ namespace comet {
 		struct call_logger_redirect_
 		{
 			template<bool>
-				struct exe
-				{
-					static inline void log_exception(const tstring &type, const tstring &desc, const source_info_t &errorSource ,const source_info_t &callSource )
-					{ }
-					static inline bool can_log_exception()
-					{ return false; }
-				};
+			struct exe
+			{
+				static inline void log_exception(
+					const tstring& /*type*/, const tstring& /*desc*/,
+					const source_info_t& /*errorSource*/, 
+					const source_info_t& /*callSource*/)
+				{ }
+				static inline bool can_log_exception()
+				{ return false; }
+			};
 		};
 	}
 
