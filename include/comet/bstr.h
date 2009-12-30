@@ -382,19 +382,25 @@ namespace comet {
 		{
 			if (is_empty()) return std::string();
 
-			size_t ol = length()+1;
+			size_t len = length() + 1;
+			
+			if (len > static_cast<size_t>(std::numeric_limits<int>::max()))
+				throw std::length_error("String is too large to be converted");
+
+			int ol = static_cast<int>(len);
+
 #if defined(_MBCS) || !defined(COMET_NO_MBCS)
 			// Calculate the required length of the buffer
-			size_t l = WideCharToMultiByte(CP_ACP, 0, str_, ol , NULL, 0, NULL, NULL);
+			int l = WideCharToMultiByte(CP_ACP, 0, str_, ol, NULL, 0, NULL, NULL);
 #else // _MBCS
-			size_t l = ol;
-			COMET_ASSERT( l == WideCharToMultiByte(CP_ACP, 0, str_, ol , NULL, 0, NULL, NULL));
+			int l = ol;
+			COMET_ASSERT( l == WideCharToMultiByte(CP_ACP, 0, str_, ol, NULL, 0, NULL, NULL));
 #endif // _MBCS
 
 			// Create the buffer
 			std::string rv(l-1, ' ');
 			// Do the conversion.
-			if (0 == WideCharToMultiByte(CP_ACP, 0, str_, UINT(ol), &rv[0], UINT(l), NULL, NULL)) {
+			if (0 == WideCharToMultiByte(CP_ACP, 0, str_, ol, &rv[0], l, NULL, NULL)) {
 				DWORD err = GetLastError();
 				raise_exception(HRESULT_FROM_WIN32(err));
 			}
