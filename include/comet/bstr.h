@@ -356,14 +356,13 @@ namespace comet {
 			std::swap(str_, x.str_);
 		}
 
+		//! Explicit conversion to const wchar_t*
+		const wchar_t* c_str() const throw()
+		{ return impl::null_to_empty(str_); }
 
-			//! Explicit conversion to const wchar_t*
-			const wchar_t* c_str() const throw()
-			{ return impl::null_to_empty(str_); }
-
-			//! Explicit conversion to std::wstring
-			std::wstring w_str() const throw()
-			{ return impl::null_to_empty(str_); }
+		//! Explicit conversion to std::wstring
+		std::wstring w_str() const throw()
+		{ return impl::null_to_empty(str_); }
 
 #ifdef _MBCS
 #ifndef COMET_NO_MBCS_WARNING
@@ -371,252 +370,252 @@ namespace comet {
 #endif
 #endif
 
-			//! Explicit conversion to std::string
-			std::string s_str() const
-			{
-				if (is_empty()) return std::string();
+		//! Explicit conversion to std::string
+		std::string s_str() const
+		{
+			if (is_empty()) return std::string();
 
-				size_t ol = length()+1;
+			size_t ol = length()+1;
 #if defined(_MBCS) || !defined(COMET_NO_MBCS)
-				// Calculate the required length of the buffer
-				size_t l = WideCharToMultiByte(CP_ACP, 0, str_, ol , NULL, 0, NULL, NULL);
+			// Calculate the required length of the buffer
+			size_t l = WideCharToMultiByte(CP_ACP, 0, str_, ol , NULL, 0, NULL, NULL);
 #else // _MBCS
-				size_t l = ol;
-				COMET_ASSERT( l == WideCharToMultiByte(CP_ACP, 0, str_, ol , NULL, 0, NULL, NULL));
+			size_t l = ol;
+			COMET_ASSERT( l == WideCharToMultiByte(CP_ACP, 0, str_, ol , NULL, 0, NULL, NULL));
 #endif // _MBCS
 
-				// Create the buffer
-				std::string rv(l-1, ' ');
-				// Do the conversion.
-				if (0 == WideCharToMultiByte(CP_ACP, 0, str_, UINT(ol), &rv[0], UINT(l), NULL, NULL)) {
-					DWORD err = GetLastError();
-					raise_exception(HRESULT_FROM_WIN32(err));
-				}
-				// remove trailing zero
-				//rv.erase(l-1);
-				return rv;
+			// Create the buffer
+			std::string rv(l-1, ' ');
+			// Do the conversion.
+			if (0 == WideCharToMultiByte(CP_ACP, 0, str_, UINT(ol), &rv[0], UINT(l), NULL, NULL)) {
+				DWORD err = GetLastError();
+				raise_exception(HRESULT_FROM_WIN32(err));
 			}
+			// remove trailing zero
+			//rv.erase(l-1);
+			return rv;
+		}
 
-			//! Explicit conversion to "tstring".
+		//! Explicit conversion to "tstring".
 #ifdef _UNICODE
-			std::wstring t_str() const
-			{
-				return w_str();
-			}
+		std::wstring t_str() const
+		{
+			return w_str();
+		}
 #else
-			std::string t_str() const
-			{
-				return s_str();
-			}
+		std::string t_str() const
+		{
+			return s_str();
+		}
 #endif
 
-			//! Implicit conversion to std::wstring
-			operator std::wstring() const { return w_str(); }
+		//! Implicit conversion to std::wstring
+		operator std::wstring() const { return w_str(); }
 
-			//! Implicit conversion to std::string
-			operator std::string() const { return s_str(); }
+		//! Implicit conversion to std::string
+		operator std::string() const { return s_str(); }
 
-			//! Returns true if and only if wrapped str is null
-			bool is_null() const throw()
-			{ return str_ == 0; }
+		//! Returns true if and only if wrapped str is null
+		bool is_null() const throw()
+		{ return str_ == 0; }
 
-			/** Returns true if and only if wrapped str has zero length.
-			 */
-			bool is_empty() const throw() { return length() == 0; }
+		/** Returns true if and only if wrapped str has zero length.
+		 */
+		bool is_empty() const throw() { return length() == 0; }
 
-			//! Returns true if and only if wrapped str has zero length.
-			bool empty() const throw() { return length() == 0; }
+		//! Returns true if and only if wrapped str has zero length.
+		bool empty() const throw() { return length() == 0; }
 
-			//! Returns length of wrapped string.
-			size_t length() const throw()
-			{ return is_null() ? 0 : ::SysStringLen(str_); }
+		//! Returns length of wrapped string.
+		size_t length() const throw()
+		{ return is_null() ? 0 : ::SysStringLen(str_); }
 
-			size_t size() const throw()
-			{ return length(); }
+		size_t size() const throw()
+		{ return length(); }
 
-			/*! \internal */
-			BSTR get_raw() const
-			{ return str_; }
+		/*! \internal */
+		BSTR get_raw() const
+		{ return str_; }
 
-			friend
-			std::basic_ostream<char> &operator<<(std::basic_ostream<char> &os, const bstr_t &val)
-			{ os << val.s_str(); return os;	}
+		friend
+		std::basic_ostream<char> &operator<<(std::basic_ostream<char> &os, const bstr_t &val)
+		{ os << val.s_str(); return os;	}
 
-			friend
-			std::basic_ostream<wchar_t> &operator<<(std::basic_ostream<wchar_t> &os, const bstr_t &val)
-			{ os << val.w_str(); return os; }
+		friend
+		std::basic_ostream<wchar_t> &operator<<(std::basic_ostream<wchar_t> &os, const bstr_t &val)
+		{ os << val.w_str(); return os; }
 
-			/// \name Boolean operators
-			//@{
+		/// \name Boolean operators
+		//@{
 
-/*			bool operator!=(const variant_t&) const;
-			bool operator==(const variant_t&) const;
-			bool operator<(const variant_t&) const;
-			bool operator>(const variant_t&) const;
-			bool operator<=(const variant_t&) const;
-			bool operator>=(const variant_t&) const;
+/*		bool operator!=(const variant_t&) const;
+		bool operator==(const variant_t&) const;
+		bool operator<(const variant_t&) const;
+		bool operator>(const variant_t&) const;
+		bool operator<=(const variant_t&) const;
+		bool operator>=(const variant_t&) const;
 */
-			bool operator==(const wchar_t* s) const
-			{ return 0 == wcscmp(c_str(), impl::null_to_empty(s) ) && is_regular(); }
+		bool operator==(const wchar_t* s) const
+		{ return 0 == wcscmp(c_str(), impl::null_to_empty(s) ) && is_regular(); }
 
-			bool operator!=(const wchar_t* s) const
-			{ return !operator==(s); }
+		bool operator!=(const wchar_t* s) const
+		{ return !operator==(s); }
 
-			bool operator<(const wchar_t* s) const
-			{ return wcscmp(c_str(), impl::null_to_empty(s)) < 0 && is_regular(); }
+		bool operator<(const wchar_t* s) const
+		{ return wcscmp(c_str(), impl::null_to_empty(s)) < 0 && is_regular(); }
 
-			bool operator>(const wchar_t* s) const
-			{ return wcscmp(c_str(), impl::null_to_empty(s)) > 0 && !is_regular();	}
+		bool operator>(const wchar_t* s) const
+		{ return wcscmp(c_str(), impl::null_to_empty(s)) > 0 && !is_regular();	}
 
-			bool operator>=(const wchar_t* s) const
-			{ return !operator<(s); }
+		bool operator>=(const wchar_t* s) const
+		{ return !operator<(s); }
 
-			bool operator<=(const wchar_t* s) const
-			{ return !operator>(s); }
+		bool operator<=(const wchar_t* s) const
+		{ return !operator>(s); }
 
-			bool operator==(const std::wstring& s) const
-			{
-				size_t l = length();
-				if (l != s.length()) return false;
-				return 0 == memcmp(str_, s.c_str(), sizeof(wchar_t)*l);
+		bool operator==(const std::wstring& s) const
+		{
+			size_t l = length();
+			if (l != s.length()) return false;
+			return 0 == memcmp(str_, s.c_str(), sizeof(wchar_t)*l);
+		}
+
+		bool operator!=(const std::wstring& s) const
+		{ return !operator==(s); }
+
+		bool operator<(const std::wstring& s) const
+		{ return std::lexicographical_compare(str_, str_+length(), s.begin(), s.end()); }
+
+		bool operator>(const std::wstring& s) const
+		{ return std::lexicographical_compare(str_, str_+length(), s.begin(), s.end(), std::greater<wchar_t>()); }
+
+		bool operator>=(const std::wstring& s) const
+		{ return !operator<(s);	}
+
+		bool operator<=(const std::wstring& s) const
+		{ return !operator>(s); }
+
+		bool operator==(const bstr_t& s) const
+		{
+			if (str_ == 0 && s.str_ == 0) return true;
+			return ::VarBstrCmp(str_, s.str_, ::GetThreadLocale(), 0) == VARCMP_EQ;
+		}
+
+		bool operator!=(const bstr_t& s) const
+		{ return !operator==(s); }
+
+		bool operator<(const bstr_t& s) const
+		{
+			if (str_ == 0) {
+				return s.str_ != 0;
 			}
 
-			bool operator!=(const std::wstring& s) const
-			{ return !operator==(s); }
+			if (s.str_ == 0) return false;
 
-			bool operator<(const std::wstring& s) const
-			{ return std::lexicographical_compare(str_, str_+length(), s.begin(), s.end()); }
+			return ::VarBstrCmp(str_, s.str_, ::GetThreadLocale(), 0) == VARCMP_LT;
+		}
 
-			bool operator>(const std::wstring& s) const
-			{ return std::lexicographical_compare(str_, str_+length(), s.begin(), s.end(), std::greater<wchar_t>()); }
-
-			bool operator>=(const std::wstring& s) const
-			{ return !operator<(s);	}
-
-			bool operator<=(const std::wstring& s) const
-			{ return !operator>(s); }
-
-			bool operator==(const bstr_t& s) const
-			{
-				if (str_ == 0 && s.str_ == 0) return true;
-				return ::VarBstrCmp(str_, s.str_, ::GetThreadLocale(), 0) == VARCMP_EQ;
+		bool operator>(const bstr_t& s) const
+		{
+			if (str_ == 0) {
+				return s.str_ != 0;
 			}
 
-			bool operator!=(const bstr_t& s) const
-			{ return !operator==(s); }
+			if (s.str_ == 0) return false;
 
-			bool operator<(const bstr_t& s) const
+			return ::VarBstrCmp(str_, s.str_, ::GetThreadLocale(), 0) == VARCMP_GT;
+		}
+
+		bool operator>=(const bstr_t& s) const
+		{ return !operator<(s);	}
+
+		bool operator<=(const bstr_t& s) const
+		{ return !operator>(s); }
+		//@}
+
+		//! String comparsion function.
+		/*! \param s String to compare
+			\param flags Comparison Flags
+			\retval &lt;0 if less
+			\retval 0 if Equal
+			\retval &gt;0 if greater
+		*/
+		int cmp(const bstr_t& s, compare_flags_t flags = compare_flags_t(0)) const
+		{
+			HRESULT res = ::VarBstrCmp(str_, s.str_, ::GetThreadLocale(), flags);
+			switch(res)
 			{
-				if (str_ == 0) {
-					return s.str_ != 0;
-				}
-
-				if (s.str_ == 0) return false;
-
-				return ::VarBstrCmp(str_, s.str_, ::GetThreadLocale(), 0) == VARCMP_LT;
-			}
-
-			bool operator>(const bstr_t& s) const
-			{
-				if (str_ == 0) {
-					return s.str_ != 0;
-				}
-
-				if (s.str_ == 0) return false;
-
-				return ::VarBstrCmp(str_, s.str_, ::GetThreadLocale(), 0) == VARCMP_GT;
-			}
-
-			bool operator>=(const bstr_t& s) const
-			{ return !operator<(s);	}
-
-			bool operator<=(const bstr_t& s) const
-			{ return !operator>(s); }
-			//@}
-
-			//! String comparsion function.
-			/*! \param s String to compare
-				\param flags Comparison Flags
-				\retval &lt;0 if less
-				\retval 0 if Equal
-				\retval &gt;0 if greater
-			*/
-			int cmp(const bstr_t& s, compare_flags_t flags = compare_flags_t(0)) const
-			{
-				HRESULT res = ::VarBstrCmp(str_, s.str_, ::GetThreadLocale(), flags);
-				switch(res)
-				{
-					case VARCMP_EQ: return 0;
-					case VARCMP_GT: return 1;
-					case VARCMP_LT: return -1;
-					case VARCMP_NULL:
-						return ((str_==0)?0:1) - ((s.str_==0)?0:1);
-				}
-				if (str_==0 || s.str_ ==0)
+				case VARCMP_EQ: return 0;
+				case VARCMP_GT: return 1;
+				case VARCMP_LT: return -1;
+				case VARCMP_NULL:
 					return ((str_==0)?0:1) - ((s.str_==0)?0:1);
-				raise_exception(res); return 0;
 			}
+			if (str_==0 || s.str_ ==0)
+				return ((str_==0)?0:1) - ((s.str_==0)?0:1);
+			raise_exception(res); return 0;
+		}
 
-//			//!\name Comparison Functors
- //   		//@{
-			//! Less Functor.
-			/*!  Useful for STL containers.
-				\code
-					typedef stl::map < comet::bstr_t, long, bstr_t::less<cf_ignore_case> > string_long_map;
-				\endcode
-				 \param CF comparison flags.
-				 \relates bstr_t
-			  */
-			template<compare_flags_t CF>
-			struct less : std::binary_function< bstr_t,bstr_t,bool>{
-				/// Functor.
-				bool operator()(const bstr_t& l, const bstr_t& r) const
-				{ return l.cmp(r, CF) <0;	}
-			};
+		//!\name Comparison Functors
+		//@{
+		//! Less Functor.
+		/*!  Useful for STL containers.
+			\code
+				typedef stl::map < comet::bstr_t, long, bstr_t::less<cf_ignore_case> > string_long_map;
+			\endcode
+			 \param CF comparison flags.
+			 \relates bstr_t
+		  */
+		template<compare_flags_t CF>
+		struct less : std::binary_function< bstr_t,bstr_t,bool>{
+			/// Functor.
+			bool operator()(const bstr_t& l, const bstr_t& r) const
+			{ return l.cmp(r, CF) <0;	}
+		};
 
-			//! less or equal functor.
-			/*!  \relates bstr_t */
-			template<compare_flags_t CF>
-			struct less_equal : std::binary_function< bstr_t,bstr_t,bool> {
-				/// Functor.
-				bool operator()(const bstr_t& l, const bstr_t& r) const
-				{ return l.cmp(r, CF) <=0;	}
-			};
+		//! less or equal functor.
+		/*!  \relates bstr_t */
+		template<compare_flags_t CF>
+		struct less_equal : std::binary_function< bstr_t,bstr_t,bool> {
+			/// Functor.
+			bool operator()(const bstr_t& l, const bstr_t& r) const
+			{ return l.cmp(r, CF) <=0;	}
+		};
 
-			//! greater functor.
-			/*!  \relates bstr_t */
-			template<compare_flags_t CF>
-			struct greater : std::binary_function< bstr_t,bstr_t,bool> {
-				/// Functor.
-				bool operator()(const bstr_t& l, const bstr_t& r) const
-				{ return l.cmp(r, CF) > 0;	}
-			};
+		//! greater functor.
+		/*!  \relates bstr_t */
+		template<compare_flags_t CF>
+		struct greater : std::binary_function< bstr_t,bstr_t,bool> {
+			/// Functor.
+			bool operator()(const bstr_t& l, const bstr_t& r) const
+			{ return l.cmp(r, CF) > 0;	}
+		};
 
-			//! greater or equal functor.
-			/*!  \relates bstr_t */
-			template<compare_flags_t CF>
-			struct greater_equal : std::binary_function< bstr_t,bstr_t,bool> {
-				/// Functor.
-				bool operator()(const bstr_t& l, const bstr_t& r) const
-				{ return l.cmp(r, CF) >=0;	}
-			};
+		//! greater or equal functor.
+		/*!  \relates bstr_t */
+		template<compare_flags_t CF>
+		struct greater_equal : std::binary_function< bstr_t,bstr_t,bool> {
+			/// Functor.
+			bool operator()(const bstr_t& l, const bstr_t& r) const
+			{ return l.cmp(r, CF) >=0;	}
+		};
 
-			//! equality functor.
-			template<compare_flags_t CF>
-			struct equal_to : std::binary_function< bstr_t,bstr_t,bool> {
-				bool operator()(const bstr_t& l, const bstr_t& r) const
-				{ return l.cmp(r, CF) == 0; }
-			};
+		//! equality functor.
+		template<compare_flags_t CF>
+		struct equal_to : std::binary_function< bstr_t,bstr_t,bool> {
+			bool operator()(const bstr_t& l, const bstr_t& r) const
+			{ return l.cmp(r, CF) == 0; }
+		};
 
-			//! Inequality functor.
-			/*!  \relates bstr_t */
-			template<compare_flags_t CF>
-			struct not_equal_to : std::binary_function< bstr_t,bstr_t,bool>{
-				/// Functor.
-				bool operator()(const bstr_t& l, const bstr_t& r) const
-				{ return l.cmp(r, CF) != 0;	}
-			};
-//			//@}
+		//! Inequality functor.
+		/*!  \relates bstr_t */
+		template<compare_flags_t CF>
+		struct not_equal_to : std::binary_function< bstr_t,bstr_t,bool>{
+			/// Functor.
+			bool operator()(const bstr_t& l, const bstr_t& r) const
+			{ return l.cmp(r, CF) != 0;	}
+		};
+		//@}
 
 		iterator begin() { return iterator(str_); }
 		iterator end() { return iterator(str_ + length()); }
