@@ -33,9 +33,9 @@
 
 #include <string>
 #include <functional>
-#ifndef NDEBUG
-#include <limits.h>
-#endif // NDEBUG
+#undef max
+#include <limits>
+
 #include <comet/assert.h>
 #include <comet/common.h>
 #include <comet/static_assert.h>
@@ -148,8 +148,12 @@ namespace comet {
 			convert_str(s, -1);
 		}
 
-		void construct(const char* s, size_t len) throw(std::bad_alloc, std::runtime_error) {
-			COMET_ASSERT( len <= INT_MAX );
+		void construct(const char* s, size_t len)
+		{
+			if (len >= static_cast<size_t>(std::numeric_limits<int>::max()))
+				throw std::length_error(
+					"String exceeded maximum length for conversion");
+
 			convert_str(s, static_cast<int>(len+1));
 		}
 
@@ -190,12 +194,12 @@ namespace comet {
 		{
 			if (s != 0) {
 #if defined(_MBCS) || !defined(COMET_NO_MBCS)
-				size_t wl = ::MultiByteToWideChar(CP_ACP, 0, s, l, NULL,0);
+				int wl = ::MultiByteToWideChar(CP_ACP, 0, s, l, NULL,0);
 #else
-				size_t wl = ((l>=0)?l: (1+strlen(s)));
+				int wl = ((l>=0)?l: (1+strlen(s)));
 				COMET_ASSERT( wl == ::MultiByteToWideChar( CP_ACP, 0, s, l, NULL,0));
 #endif
-				str_ = impl::bad_alloc_check(::SysAllocStringLen(0, UINT(wl-1)));
+				str_ = impl::bad_alloc_check(::SysAllocStringLen(0, wl - 1));
 				if (::MultiByteToWideChar(CP_ACP, 0, s, l, str_, wl) == 0)
 				{
 					destroy();
@@ -271,10 +275,13 @@ namespace comet {
 
 			\exception std::bad_alloc
 				On memory exhaustion std::bad_alloc is thrown.
+			\exception std::length_error
+				If this given string is too long to be converted, 
+				std::length_error is thrown.
 			\exception std::runtime_error
-				Should string conversion fail, std::runtime_error will be thrown.
+				Should string conversion fail, std::runtime_error is thrown.
 		*/
-		bstr_t(const std::string& s) throw(std::runtime_error)
+		bstr_t(const std::string& s)
 		{
 			construct(s.c_str(), s.length());
 		}
