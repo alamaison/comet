@@ -490,6 +490,8 @@ namespace comet {
 		inline operator int() const { return as_int(); }
 		COMET_VARIANT_CONVERTERS_EXPLICIT(long, I4, as_long);
 		inline operator long() const { return as_long(); }
+		COMET_VARIANT_CONVERTERS_EXPLICIT(LONGLONG, I8, as_longlong);
+		inline operator LONGLONG() const { return as_longlong(); }
 		COMET_VARIANT_CONVERTERS_EXPLICIT(float, R4, as_float);
 		inline operator float() const { return as_float(); }
 		COMET_VARIANT_CONVERTERS_EXPLICIT(double, R8, as_double);
@@ -501,6 +503,7 @@ namespace comet {
 		COMET_VARIANT_CONVERTERS_EXPLICIT(unsigned short, UI2, as_ushort);
 		COMET_VARIANT_CONVERTERS_EXPLICIT(unsigned int, UI4, as_uint);
 		COMET_VARIANT_CONVERTERS_EXPLICIT(unsigned long, UI4, as_ulong);
+		COMET_VARIANT_CONVERTERS_EXPLICIT(ULONGLONG, UI8, as_ulonglong);
 		COMET_VARIANT_CONVERTERS_EXPLICIT(DECIMAL, DECIMAL, as_decimal);
 
 		wchar_t as_wchar_t() const { return as_ushort(); }
