@@ -1073,7 +1073,7 @@ class datetime_t : private impl::datetime_base<DATE>
 
 		/** Convert to SYSTEMTIME struct.
 		 */
-		bool to_systemtime( SYSTEMTIME *sysTime)
+		bool to_systemtime( SYSTEMTIME *sysTime) const
 		{
 			int year,month,day,dow,hour,minute,second,ms;
 			if (!datetime_from_oledate_( dt_, &year,  &month, &day, &dow, &hour, &minute, &second, &ms, cmBoth))
@@ -1146,7 +1146,7 @@ class datetime_t : private impl::datetime_base<DATE>
 
 		/** Convert to a \e FILETIME struct.
 		 */
-		bool to_filetime( FILETIME *filetime)
+		bool to_filetime( FILETIME *filetime) const
 		{
 			double val = ((to_double(dt_)  * 24.) + 2620920.)*(36000000000.) ;
 
