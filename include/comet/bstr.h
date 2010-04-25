@@ -51,14 +51,6 @@
 
 namespace comet {
 
-	class datetime_t;
-	class currency_t;
-	template<typename T> class com_ptr;
-	template<typename T> class safearray_t;
-
-	// Forward declaration
-//	class variant_t;
-
 #ifndef NORM_IGNOREKASHIDA
 #define	 NORM_IGNOREKASHIDA 0x00040000
 #endif // NORM_IGNOREKASHIDA
@@ -334,8 +326,6 @@ namespace comet {
 			assign(first, last);
 		}
 
-//		bstr_t(const variant_t& v) throw(std::bad_alloc);
-
 		explicit bstr_t(const uuid_t& u, bool braces = false)
 		{
 			construct(u, braces);
@@ -460,13 +450,6 @@ namespace comet {
 		/// \name Boolean operators
 		//@{
 
-/*		bool operator!=(const variant_t&) const;
-		bool operator==(const variant_t&) const;
-		bool operator<(const variant_t&) const;
-		bool operator>(const variant_t&) const;
-		bool operator<=(const variant_t&) const;
-		bool operator>=(const variant_t&) const;
-*/
 		bool operator==(const wchar_t* s) const
 		{ return 0 == wcscmp(c_str(), impl::null_to_empty(s) ) && is_regular(); }
 
@@ -952,7 +935,6 @@ namespace std {
 	template<> inline void swap( comet::bstr_t& x, comet::bstr_t& y) COMET_STD_SWAP_NOTHROW { x.swap(y); }
 }
 
-#include <comet/variant.h>
 #include <comet/uuid.h>
 
 #pragma warning(pop)
