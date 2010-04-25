@@ -81,6 +81,49 @@ namespace comet {
 	template<typename T> class safearray_t;
 
 	namespace impl {
+
+		template <typename T>
+		inline HRESULT compare(const T& operand1, const T& operand2)
+		{
+			if (operand1 == operand2)
+				return VARCMP_EQ;
+			else if (operand1 < operand2)
+				return VARCMP_LT;
+			else
+				return VARCMP_GT;
+		}
+
+		/**
+		 * Comparison workaround for broken VarCmp.
+		 *
+		 * VarCmp() doesn't work for several of the numeric types
+		 * (VT_I1, VT_INT, VT_UI2, VT_UI4, VT_UINT or VT_UI8) so we have 
+		 * to do these ourselves.
+		 *
+		 * @see http://source.winehq.org/WineAPI/VarCmp.html
+		 */
+		inline HRESULT var_cmp(
+			VARIANT* lhs, VARIANT* rhs, LCID lcid, ULONG flags)
+		{
+			switch (V_VT(lhs))
+			{
+			case VT_I1:
+				return compare(V_I1(lhs), V_I1(rhs));
+			case VT_INT:
+				return compare(V_INT(lhs), V_INT(rhs));
+			case VT_UI2:
+				return compare(V_UI2(lhs), V_UI2(rhs));
+			case VT_UI4:
+				return compare(V_UI4(lhs), V_UI4(rhs));
+			case VT_UINT:
+				return compare(V_UINT(lhs), V_UINT(rhs));
+			case VT_UI8:
+				return compare(V_UI8(lhs), V_UI8(rhs));
+			default:
+				return ::VarCmp(lhs, rhs, lcid, flags);
+			}
+		}
+
 	};
 
 	template<typename Itf> class com_ptr;
@@ -596,9 +639,9 @@ namespace comet {
 				if (V_VT(this) == VT_EMPTY || V_VT(&x) == VT_EMPTY) return false;
 				variant_t tmp(x, V_VT(this), std::nothrow);
 				if (V_VT(&tmp) != V_VT(this)) return false;
-				return VARCMP_EQ == (VarCmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(tmp.get_var()), GetThreadLocale(), 0) | raise_exception) ;
+				return VARCMP_EQ == (impl::var_cmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(tmp.get_var()), GetThreadLocale(), 0) | raise_exception) ;
 			} else {
-				switch (VarCmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(x.get_var()), GetThreadLocale(), 0))
+				switch (impl::var_cmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(x.get_var()), GetThreadLocale(), 0))
 				{
 				case VARCMP_EQ:
 				case VARCMP_NULL:
@@ -629,9 +672,9 @@ namespace comet {
 		bool operator<(const variant_t& x) const throw(com_error)
 		{
 			if (V_VT(&x) != V_VT(this)) {
-				return VARCMP_LT == (VarCmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(variant_t(x, V_VT(this)).get_var()), GetThreadLocale(), 0) | raise_exception);
+				return VARCMP_LT == (impl::var_cmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(variant_t(x, V_VT(this)).get_var()), GetThreadLocale(), 0) | raise_exception);
 			} else {
-				return VARCMP_LT == (VarCmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(x.get_var()), GetThreadLocale(), 0) | raise_exception);
+				return VARCMP_LT == (impl::var_cmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(x.get_var()), GetThreadLocale(), 0) | raise_exception);
 			}
 		}
 
@@ -650,9 +693,9 @@ namespace comet {
 		bool operator>(const variant_t& x) const throw(com_error)
 		{
 			if (V_VT(&x) != V_VT(this)) {
-				return VARCMP_GT == (VarCmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(variant_t(x, V_VT(this)).get_var()), GetThreadLocale(), 0) | raise_exception);
+				return VARCMP_GT == (impl::var_cmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(variant_t(x, V_VT(this)).get_var()), GetThreadLocale(), 0) | raise_exception);
 			} else {
-				return VARCMP_GT == (VarCmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(x.get_var()), GetThreadLocale(), 0) | raise_exception);
+				return VARCMP_GT == (impl::var_cmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(x.get_var()), GetThreadLocale(), 0) | raise_exception);
 			}
 		}
 

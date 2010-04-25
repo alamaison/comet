@@ -1003,4 +1003,152 @@ struct comet::test<26>
 	}
 };
 
+void expect_equal(const variant_t& lhs, const variant_t& rhs)
+{
+	if (!(lhs == rhs))
+		throw runtime_error("lhs == rhs not true");
+	if (lhs != rhs)
+		throw runtime_error("lhs != rhs");
+	if (lhs < rhs)
+		throw runtime_error("lhs < rhs");
+	if (lhs > rhs)
+		throw runtime_error("lhs > rhs");
+}
+
+void expect_less_than(const variant_t& lhs, const variant_t& rhs)
+{
+	if (!(lhs < rhs))
+		throw runtime_error("lhs < rhs not true");
+	if (lhs == rhs)
+		throw runtime_error("lhs == rhs");
+	if (!(lhs != rhs))
+		throw runtime_error("lhs != rhs not true");
+	if (lhs > rhs)
+		throw runtime_error("lhs > rhs");
+}
+
+void expect_greater_than(const variant_t& lhs, const variant_t& rhs)
+{
+	if (!(lhs > rhs))
+		throw runtime_error("lhs > rhs not true");
+	if (lhs == rhs)
+		throw runtime_error("lhs == rhs");
+	if (!(lhs != rhs))
+		throw runtime_error("lhs != rhs not true");
+	if (lhs < rhs)
+		throw runtime_error("lhs < rhs");
+}
+
+// I1, UI2, VT_UI4, UI8 and UINT
+
+template<>
+struct comet::test<27>
+{
+	void run()
+	{
+		expect_equal(char(0), char(0));
+		expect_less_than(char(0), char(1));
+		expect_greater_than(char(1), char(0));
+	}
+};
+
+template<>
+struct comet::test<28>
+{
+	void run()
+	{
+		expect_equal(unsigned char(0), unsigned char(0));
+		expect_less_than(unsigned char(0), unsigned char(1));
+		expect_greater_than(unsigned char(1), unsigned char(0));
+	}
+};
+
+template<>
+struct comet::test<29>
+{
+	void run()
+	{
+		expect_equal(short(0), short(0));
+		expect_less_than(short(0), short(1));
+		expect_greater_than(short(1), short(0));
+	}
+};
+
+template<>
+struct comet::test<30>
+{
+	void run()
+	{
+		expect_equal(unsigned short(0), unsigned short(0));
+		expect_less_than(unsigned short(0), unsigned short(1));
+		expect_greater_than(unsigned short(1), unsigned short(0));
+	}
+};
+
+template<>
+struct comet::test<31>
+{
+	void run()
+	{
+		expect_equal(int(0), int(0));
+		expect_less_than(int(0), int(1));
+		expect_greater_than(int(1), int(0));
+	}
+};
+
+template<>
+struct comet::test<32>
+{
+	void run()
+	{
+		expect_equal(unsigned int(0), unsigned int(0));
+		expect_less_than(unsigned int(0), unsigned int(1));
+		expect_greater_than(unsigned int(1), unsigned int(0));
+	}
+};
+
+template<>
+struct comet::test<33>
+{
+	void run()
+	{
+		expect_equal(long(0), long(0));
+		expect_less_than(long(0), long(1));
+		expect_greater_than(long(1), long(0));
+	}
+};
+
+template<>
+struct comet::test<34>
+{
+	void run()
+	{
+		expect_equal(unsigned long(0), unsigned long(0));
+		expect_less_than(unsigned long(0), unsigned long(1));
+		expect_greater_than(unsigned long(1), unsigned long(0));
+	}
+};
+
+template<>
+struct comet::test<35>
+{
+	void run()
+	{
+		expect_equal(LONGLONG(0), LONGLONG(0));
+		expect_less_than(LONGLONG(0), LONGLONG(1));
+		expect_greater_than(LONGLONG(1), LONGLONG(0));
+	}
+};
+
+template<>
+struct comet::test<36>
+{
+	void run()
+	{
+		expect_equal(ULONGLONG(0), ULONGLONG(0));
+		expect_less_than(ULONGLONG(0), ULONGLONG(1));
+		expect_greater_than(ULONGLONG(1), ULONGLONG(0));
+	}
+};
+
 COMET_TEST_MAIN
