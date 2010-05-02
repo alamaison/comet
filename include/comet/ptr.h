@@ -470,9 +470,11 @@ namespace comet {
 	*/
 	template<typename Itf> class com_ptr
 	{
+	public:
 		const uuid_t& iid() const throw()
 		{ return uuidof<Itf>();	}
 
+	private:
 		enum{ chooser_matches_= impl::iunknown_chooser<Itf>::matches };
 		typedef typename impl::IUnknown_caller< chooser_matches_ > Unknown_caller_;
 
