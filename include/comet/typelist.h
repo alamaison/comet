@@ -67,14 +67,14 @@ namespace comet {
 
 
 #define COMET_LIST_TEMPLATE \
-	typename X00=nil, COMET_TL_LIST( typename X01=nil, typename X02=nil, typename X03=nil, typename X04=nil, \
-	typename X05=nil, typename X06=nil, typename X07=nil, typename X08=nil, typename X09=nil, \
-	typename X10=nil, typename X11=nil, typename X12=nil, typename X13=nil, typename X14=nil, \
-	typename X15=nil, typename X16=nil, typename X17=nil, typename X18=nil, typename X19=nil, \
-	typename X20=nil, typename X21=nil, typename X22=nil, typename X23=nil, typename X24=nil, \
-	typename X25=nil, typename X26=nil, typename X27=nil, typename X28=nil, typename X29=nil, \
-	typename X30=nil, typename X31=nil, typename X32=nil, typename X33=nil, typename X34=nil, \
-	typename X35=nil, typename X36=nil, typename X37=nil, typename X38=nil, typename X39=nil)
+	typename X00=comet::nil, COMET_TL_LIST( typename X01=comet::nil, typename X02=comet::nil, typename X03=comet::nil, typename X04=comet::nil, \
+	typename X05=comet::nil, typename X06=comet::nil, typename X07=comet::nil, typename X08=comet::nil, typename X09=comet::nil, \
+	typename X10=comet::nil, typename X11=comet::nil, typename X12=comet::nil, typename X13=comet::nil, typename X14=comet::nil, \
+	typename X15=comet::nil, typename X16=comet::nil, typename X17=comet::nil, typename X18=comet::nil, typename X19=comet::nil, \
+	typename X20=comet::nil, typename X21=comet::nil, typename X22=comet::nil, typename X23=comet::nil, typename X24=comet::nil, \
+	typename X25=comet::nil, typename X26=comet::nil, typename X27=comet::nil, typename X28=comet::nil, typename X29=comet::nil, \
+	typename X30=comet::nil, typename X31=comet::nil, typename X32=comet::nil, typename X33=comet::nil, typename X34=comet::nil, \
+	typename X35=comet::nil, typename X36=comet::nil, typename X37=comet::nil, typename X38=comet::nil, typename X39=comet::nil)
 
 #define COMET_LIST_TEMPLATE_0 typename X00, COMET_TL_LIST(\
 	typename X01, typename X02, typename X03, typename X04, \
@@ -98,11 +98,11 @@ namespace comet {
 	X20,X21,X22,X23,X24,X25,X26,X27,X28,X29, \
 	X30,X31,X32,X33,X34,X35,X36,X37,X38,X39)
 
-#define COMET_LIST_NIL nil, COMET_TL_LIST(\
-	nil,nil,nil,nil,nil,nil,nil,nil,nil, \
-	nil,nil,nil,nil,nil,nil,nil,nil,nil,nil, \
-	nil,nil,nil,nil,nil,nil,nil,nil,nil,nil, \
-	nil,nil,nil,nil,nil,nil,nil,nil,nil,nil)
+#define COMET_LIST_NIL comet::nil, COMET_TL_LIST(\
+	comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil, \
+	comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil, \
+	comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil, \
+	comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil,comet::nil)
 
 	/** \struct make_list typelist.h comet/typelist.h
 	  * Construct a 'type list' of up to 40 types.
