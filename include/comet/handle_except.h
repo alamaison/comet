@@ -22,6 +22,8 @@
 #pragma message("   #Include " __FILE__)
 #endif
 
+#include <comet/error.h>
+
 /** \page comethandleexception Custom Exception Handling
     This allows the user to define how exception handling happens for a particular library.
 
