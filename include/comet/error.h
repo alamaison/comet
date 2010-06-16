@@ -126,8 +126,27 @@ namespace comet {
 		}
 
 		/// Construct with an error-info and hresult.
-		explicit com_error(HRESULT hr, const com_ptr<IErrorInfo>& ei) : hr_(hr), ei_(ei), std::runtime_error("")
+		explicit com_error(HRESULT hr, const com_ptr<IErrorInfo>& ei)
+			: hr_(hr), ei_(ei), std::runtime_error("")
 		{}
+
+		/**
+		 * Construct exception from last error info set on current thread.
+		 *
+		 * Use this constructor immediately after an interface returns a
+		 * failure code before any other code can call SetErrorInfo and
+		 * overwrite the error.
+		 *
+		 * \param failure_source  Interface whose method return a failure code.
+		 * \param hr              HRESULT value of error.
+		 */
+		template<typename Itf>
+		explicit com_error(const com_ptr<Itf>& failure_source, HRESULT hr)
+			: hr_(hr), std::runtime_error("")
+		{
+			if (impl::supports_ErrorInfo(failure_source.get()))
+				ei_ = impl::GetErrorInfo();
+		}
 
 	public:
 		//! Return a string with a description of the error
