@@ -1,6 +1,7 @@
 #define COMET_ASSERT_THROWS_ALWAYS
 
 #include <comet/comet.h>
+#include <comet/enum.h>
 #include <comet/server.h>
 #include <comet/datetime.h>
 #include <comet/safearray.h>
@@ -1148,6 +1149,143 @@ struct comet::test<36>
 		expect_equal(ULONGLONG(0), ULONGLONG(0));
 		expect_less_than(ULONGLONG(0), ULONGLONG(1));
 		expect_greater_than(ULONGLONG(1), ULONGLONG(0));
+	}
+};
+
+template<> struct comet::comtype<IEnumUnknown>
+{
+	static const IID& uuid() throw() { return IID_IEnumUnknown; }
+	typedef IUnknown base;
+};
+
+template<> struct comet::impl::type_policy<IUnknown*>
+{
+	template<typename S>
+	static void init(IUnknown*& p, const S& s) 
+	{  p = s.get(); p->AddRef(); }
+
+	static void clear(IUnknown*& p) { p->Release(); }	
+};
+
+void empty_enum_test(com_ptr<IEnumUnknown> e)
+{
+	IUnknown* punk;
+	ULONG count = 12;
+	HRESULT hr = e->Next(1, &punk, &count);
+	if (hr != S_FALSE)
+		throw runtime_error("HRESULT is not S_FALSE");
+	if (count != 0)
+		throw runtime_error("Incorrect return count");
+}
+
+/**
+ * Empty stl_enumeration_t.
+ */
+template<>
+struct comet::test<37>
+{
+	void run()
+	{
+		typedef std::vector< com_ptr<IUnknown> > collection_type;
+		collection_type coll;
+		com_ptr<IEnumUnknown> e = new stl_enumeration_t<
+			IEnumUnknown, collection_type, IUnknown*>(coll);
+		empty_enum_test(e);
+	}
+};
+
+class test_obj : public simple_object<nil> {};
+
+vector< com_ptr<IUnknown> > test_collection()
+{
+	vector< com_ptr<IUnknown> > collection;
+	collection.push_back(new test_obj());
+	collection.push_back(new test_obj());
+	collection.push_back(new test_obj());
+	return collection;
+}
+
+void enum_test(com_ptr<IEnumUnknown> e)
+{
+	IUnknown* punks[3];
+
+	// Test validity
+	for (int i = 0; i < 3; ++i)
+	{
+		IUnknown* punk;
+		ULONG count = 12;
+		HRESULT hr = e->Next(1, &punk, &count);
+		if (hr != S_OK)
+			throw runtime_error("HRESULT is not S_OK");
+
+		if (count != 1)
+			throw runtime_error("Incorrect return count");
+
+		if (punk == NULL)
+			throw runtime_error("NULL returned instead of object");
+		punk->AddRef();
+		punk->Release();
+
+		punks[i] = punk; // store for uniqueness test later
+	}
+
+	empty_enum_test(e);
+
+	// Test uniqueness
+	if (punks[0] == punks[1])
+	   throw runtime_error("Same object returned twice");
+	if (punks[0] == punks[2])
+	   throw runtime_error("Same object returned twice");
+	if (punks[2] == punks[1])
+	   throw runtime_error("Same object returned twice");
+}
+
+void enum_chunk_test(com_ptr<IEnumUnknown> e)
+{
+	IUnknown* punk[4];
+	ULONG count = 12;
+	HRESULT hr = e->Next(4, punk, &count); // request more than expected
+	if (hr != S_FALSE)
+		throw runtime_error("HRESULT is not S_FALSE");
+
+	if (count != 3)
+		throw runtime_error("Incorrect return count");
+
+	// Test validity
+	for (int i = 0; i < 3; ++i)
+	{
+		if (punk[i] == NULL)
+			throw runtime_error("NULL returned instead of object");
+		punk[i]->AddRef();
+		punk[i]->Release();
+	}
+
+	empty_enum_test(e);
+
+	// Test uniqueness
+	if (punk[0] == punk[1])
+	   throw runtime_error("Same object returned twice");
+	if (punk[0] == punk[2])
+	   throw runtime_error("Same object returned twice");
+	if (punk[2] == punk[1])
+	   throw runtime_error("Same object returned twice");
+}
+
+/**
+ * Populated stl_enumeration_t.
+ */
+template<>
+struct comet::test<38>
+{
+	void run()
+	{
+		typedef std::vector< com_ptr<IUnknown> > collection_type;
+		collection_type coll = test_collection();
+		com_ptr<IEnumUnknown> e = new stl_enumeration_t<
+			IEnumUnknown, collection_type, IUnknown*>(coll);
+		enum_test(e);
+		e->Reset();
+		enum_chunk_test(e);
 	}
 };
 
