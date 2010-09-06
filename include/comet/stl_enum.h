@@ -38,7 +38,7 @@ namespace comet {
 
 			explicit stl_enum_source(
 				const Collection& container, com_ptr<Outer> outer)
-				: container_(container), outer_(outer) {}
+				: outer_(outer), container_(container), it_(begin()) {}
 
 			const_iterator begin()
 			{
@@ -50,9 +50,15 @@ namespace comet {
 				return container_.end();
 			}
 
+			const_iterator& current()
+			{
+				return it_;
+			}
+
 		private:
-			const Collection& container_;
 			com_ptr<Outer> outer_;
+			const Collection& container_;
+			const_iterator it_;
 		};
 
 	}

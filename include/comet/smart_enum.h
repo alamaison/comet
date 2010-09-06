@@ -35,7 +35,8 @@ namespace comet {
 			typedef typename SmartPtr::element_type::const_iterator
 				const_iterator;
 
-			explicit smart_enum_source(SmartPtr source) : source_(source) {}
+			explicit smart_enum_source(SmartPtr source)
+				: source_(source), it_(begin()) {}
 
 			const_iterator begin()
 			{
@@ -47,8 +48,14 @@ namespace comet {
 				return source_->end();
 			}
 
+			const_iterator& current()
+			{
+				return it_;
+			}
+
 		private:
 			SmartPtr source_;
+			const_iterator it_;
 		};
 
 	}

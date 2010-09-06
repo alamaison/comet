@@ -69,19 +69,21 @@ namespace comet {
 					return E_POINTER;
 
 				UINT i = 0;
-				typename Source::const_iterator backup_it_ = it_;
+				typename Source::const_iterator backup_it_ = source_.current();
 				try
 				{
-					for (;i<celt && it_ != source_.end(); ++i, ++it_)
+					while (i < celt && source_.current() != source_.end())
 					{
-						policy::init(rgelt[i], converter_(*it_));
+						policy::init(rgelt[i], converter_(*source_.current()));
+						++i;
+						++source_.current();
 					}
 					if (pceltFetched)
 						*pceltFetched = i;
 				}
 				catch (...)
 				{
-					it_ = backup_it_;
+					source_.current() = backup_it_;
 					for (size_t j = 0; j <= i; ++j)
 						policy::clear(rgelt[j]);
 					return E_FAIL;
@@ -94,7 +96,7 @@ namespace comet {
 			{
 				try
 				{
-					it_ = source_.begin();
+					source_.current() = source_.begin();
 				}
 				catch (...) { return E_FAIL; }
 				return S_OK;
@@ -104,7 +106,7 @@ namespace comet {
 			{
 				try
 				{
-					while (celt--) it_++;
+					while (celt--) source_.current()++;
 				}
 				catch (...) { return E_FAIL; }
 				return S_OK;
@@ -126,13 +128,9 @@ namespace comet {
 
 			enumeration(
 				typename Source source, const CONVERTER& converter)
-				: source_(source), converter_(converter)
-			{
-				it_ = source_.begin();
-			}
+				: source_(source), converter_(converter) {}
 
 			Source source_;
-			typename Source::const_iterator it_;
 			CONVERTER converter_;
 
 		private:
