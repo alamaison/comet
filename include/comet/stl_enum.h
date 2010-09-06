@@ -28,6 +28,35 @@
 
 namespace comet {
 
+	namespace impl {
+
+		template<typename Collection, typename Outer>
+		class stl_enum_source
+		{
+		public:
+			typedef typename Collection::const_iterator const_iterator;
+
+			explicit stl_enum_source(
+				const Collection& container, com_ptr<Outer> outer)
+				: container_(container), outer_(outer) {}
+
+			const_iterator begin()
+			{
+				return container_.begin();
+			}
+
+			const_iterator end()
+			{
+				return container_.end();
+			}
+
+		private:
+			const Collection& container_;
+			com_ptr<Outer> outer_;
+		};
+
+	}
+
 	/** \class stl_enumeration_t  enum.h comet/enum.h
 	  * Implements _NewEnum style COM object.
 	  * \param Itf Enumeration Interface.
@@ -39,86 +68,18 @@ namespace comet {
     template<
 		typename Itf, typename C, typename T=VARIANT,
 		typename CONVERTER=std::identity<COMET_STRICT_TYPENAME C::value_type>,
-		typename TH = ::IUnknown>
-	class stl_enumeration_t : public simple_object<Itf>
+		typename TH=::IUnknown>
+	class stl_enumeration_t :
+		public impl::enumeration<
+			Itf, T, CONVERTER, impl::stl_enum_source<C, TH> >
 	{
-		typedef impl::type_policy<T> policy;
 	public:
-		/// \name Interface \p Itf
-		//@{
-		STDMETHOD(Next)(ULONG celt, T *rgelt, ULONG* pceltFetched)
-		{
-			if (pceltFetched)
-				*pceltFetched = 0;
-			if (!rgelt)
-				return E_POINTER;
-
-			UINT i = 0;
-			typename C::const_iterator backup_it_ = it_;
-			try {
-				for (;i<celt && it_ != container_.end(); ++i, ++it_) {
-					policy::init(rgelt[i], converter_(*it_));
-				}
-				if (pceltFetched) *pceltFetched = i;
-			}
-			catch (...) {
-				it_ = backup_it_;
-				for (size_t j=0; j<=i; ++j) policy::clear(rgelt[j]);
-				return E_FAIL;
-			}
-			return i == celt ? S_OK : S_FALSE;
-		}
-		
-		STDMETHOD(Reset)()
-		{
-			try {
-				it_ = container_.begin();
-			}
-			catch (...) {
-				return E_FAIL;
-			}
-			return S_OK;
-		}
-		
-		STDMETHOD(Skip)(ULONG celt)
-		{
-			try {
-				while (celt--) it_++;
-			} catch (...) {
-				return E_FAIL;
-			}
-			return S_OK;
-		}
-		
-		STDMETHOD(Clone)(Itf** ppenum)
-		{
-			try {
-				stl_enumeration_t* new_enum =
-					new stl_enumeration_t(container_, pOuter_.in(), converter_);
-				new_enum->AddRef();
-				*ppenum = new_enum;
-			} catch (...) {
-				return E_FAIL;
-			}
-			return S_OK;
-		}
-		//@}
 		
 		stl_enumeration_t(
-			const C& c, TH* pOuter = 0, const CONVERTER& converter=CONVERTER())
-			: container_(c), pOuter_(pOuter), converter_(converter)
-		{
-			it_ = container_.begin();
-		}
-		
-		~stl_enumeration_t() 
-		{
-		}
-		
-		const C& container_;
-		typename C::const_iterator it_;
-		com_ptr<TH> pOuter_;
-		CONVERTER converter_;
+			const C& container, TH* outer=0,
+			const CONVERTER& converter=CONVERTER())
+			: enumeration(
+				impl::stl_enum_source<C, TH>(container, outer), converter) {}
 
 	private:
 		stl_enumeration_t(const stl_enumeration_t&);

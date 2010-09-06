@@ -2,6 +2,7 @@
 
 #include <comet/comet.h>
 #include <comet/enum.h>
+#include <comet/smart_enum.h>
 #include <comet/server.h>
 #include <comet/datetime.h>
 #include <comet/safearray.h>
@@ -1194,6 +1195,24 @@ struct comet::test<37>
 	}
 };
 
+/**
+ * Empty smart_enumeration.
+ */
+template<>
+struct comet::test<38>
+{
+	void run()
+	{
+		typedef std::auto_ptr< std::vector< com_ptr<IUnknown> > > smart_collection;
+		smart_collection coll(new std::vector< com_ptr<IUnknown> >());
+		com_ptr<IEnumUnknown> e = new smart_enumeration<
+			IEnumUnknown, smart_collection, IUnknown*>(coll);
+		coll.reset(); // force enum to be the only owner (should happen
+		              // regardless with an auto_ptr)
+		empty_enum_test(e);
+	}
+};
+
 class test_obj : public simple_object<nil> {};
 
 vector< com_ptr<IUnknown> > test_collection()
@@ -1275,7 +1294,7 @@ void enum_chunk_test(com_ptr<IEnumUnknown> e)
  * Populated stl_enumeration_t.
  */
 template<>
-struct comet::test<38>
+struct comet::test<39>
 {
 	void run()
 	{
@@ -1283,6 +1302,27 @@ struct comet::test<38>
 		collection_type coll = test_collection();
 		com_ptr<IEnumUnknown> e = new stl_enumeration_t<
 			IEnumUnknown, collection_type, IUnknown*>(coll);
+		enum_test(e);
+		e->Reset();
+		enum_chunk_test(e);
+	}
+};
+
+/**
+ * Populated smart_enumeration.
+ */
+template<>
+struct comet::test<40>
+{
+	void run()
+	{
+		typedef std::auto_ptr< std::vector< com_ptr<IUnknown> > > smart_collection;
+		smart_collection coll(
+			new std::vector< com_ptr<IUnknown> >(test_collection()));
+		com_ptr<IEnumUnknown> e = new smart_enumeration<
+			IEnumUnknown, smart_collection, IUnknown*>(coll);
+		coll.reset(); // force enum to be the only owner (should happen
+		              // regardless with an auto_ptr)
 		enum_test(e);
 		e->Reset();
 		enum_chunk_test(e);

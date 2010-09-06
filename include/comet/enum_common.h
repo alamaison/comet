@@ -21,8 +21,9 @@
 
 #include <comet/config.h>
 
-#include <comet/variant.h>
+#include <comet/server.h>
 #include <comet/stl.h>
+#include <comet/variant.h>
 
 namespace comet {
 
@@ -51,6 +52,94 @@ namespace comet {
 
 			static void clear(CONNECTDATA& t) { t.pUnk->Release(); }
 		};
+
+		template<
+			typename Itf, typename T, typename CONVERTER, typename Source>
+		class enumeration : public simple_object<Itf>
+		{
+			typedef type_policy<T> policy;
+		public:
+			/// \name Interface \p Itf
+			//@{
+			STDMETHOD(Next)(ULONG celt, T *rgelt, ULONG* pceltFetched)
+			{
+				if (pceltFetched)
+					*pceltFetched = 0;
+				if (!rgelt)
+					return E_POINTER;
+
+				UINT i = 0;
+				typename Source::const_iterator backup_it_ = it_;
+				try
+				{
+					for (;i<celt && it_ != source_.end(); ++i, ++it_)
+					{
+						policy::init(rgelt[i], converter_(*it_));
+					}
+					if (pceltFetched)
+						*pceltFetched = i;
+				}
+				catch (...)
+				{
+					it_ = backup_it_;
+					for (size_t j = 0; j <= i; ++j)
+						policy::clear(rgelt[j]);
+					return E_FAIL;
+				}
+
+				return i == celt ? S_OK : S_FALSE;
+			}
+
+			STDMETHOD(Reset)()
+			{
+				try
+				{
+					it_ = source_.begin();
+				}
+				catch (...) { return E_FAIL; }
+				return S_OK;
+			}
+
+			STDMETHOD(Skip)(ULONG celt)
+			{
+				try
+				{
+					while (celt--) it_++;
+				}
+				catch (...) { return E_FAIL; }
+				return S_OK;
+			}
+
+			STDMETHOD(Clone)(Itf** ppenum)
+			{
+				try
+				{
+					enumeration* new_enum =
+						new enumeration(source_, converter_);
+					new_enum->AddRef();
+					*ppenum = new_enum;
+				}
+				catch (...) { return E_FAIL; }
+				return S_OK;
+			}
+			//@}
+
+			enumeration(
+				typename Source source, const CONVERTER& converter)
+				: source_(source), converter_(converter)
+			{
+				it_ = source_.begin();
+			}
+
+			Source source_;
+			typename Source::const_iterator it_;
+			CONVERTER converter_;
+
+		private:
+			enumeration(const enumeration&);
+			enumeration& operator=(const enumeration&);
+		};
+
 	}
 	
 	/** \struct enumerated_type_of enum.h comet/enum.h
