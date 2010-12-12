@@ -130,24 +130,6 @@ namespace comet {
 			: hr_(hr), ei_(ei), std::runtime_error("")
 		{}
 
-		/**
-		 * Construct exception from last error info set on current thread.
-		 *
-		 * Use this constructor immediately after an interface returns a
-		 * failure code before any other code can call SetErrorInfo and
-		 * overwrite the error.
-		 *
-		 * \param failure_source  Interface whose method return a failure code.
-		 * \param hr              HRESULT value of error.
-		 */
-		template<typename Itf>
-		explicit com_error(const com_ptr<Itf>& failure_source, HRESULT hr)
-			: hr_(hr), std::runtime_error("")
-		{
-			if (impl::supports_ErrorInfo(failure_source.get()))
-				ei_ = impl::GetErrorInfo();
-		}
-
 	public:
 		//! Return a string with a description of the error
 		/*!
@@ -376,6 +358,35 @@ namespace comet {
 	{
 		throw com_error(hr, ei);
 	}
+
+	/**
+	 * Construct exception for a method called on a raw COM interface.
+	 *
+	 * This method aims to imbue the com_error with as much information about
+	 * the failure as possible:
+	 * - If the interface supports IErrorInfo, the information is taken from
+	 *   the last ErrorInfo set on the current thread.
+	 * - If not, the HRESULT alone determines the message.
+	 *
+	 * Use this constructor immediately after an interface returns a
+	 * failure code before any other code can call SetErrorInfo and
+	 * overwrite the error.
+	 *
+	 * \param failure_source  Interface whose method returned a failure code.
+	 * \param hr              HRESULT value of error.
+	 *
+	 * \todo  Can we add an optional user-defined message to this?
+	 */
+	template<typename Itf>
+	com_error com_error_from_interface(
+		com_ptr<Itf> failure_source, HRESULT hr)
+	{
+		if (impl::supports_ErrorInfo(failure_source.get()))
+			return com_error(hr, impl::GetErrorInfo());
+		else
+			return com_error(hr);
+	}
+
 	//@}
 }
 
