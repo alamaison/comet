@@ -715,7 +715,6 @@ namespace comet {
 			return *this;
 		}
 
-	private:
 		// Detach a raw BSTR from it's wrapper - detach function is dangerous.
 		BSTR detach()
 		{
@@ -723,6 +722,7 @@ namespace comet {
 			str_ = 0;
 			return s;
 		}
+
 	public:
 
 		//!\name Create a reference to a BSTR
