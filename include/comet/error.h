@@ -378,13 +378,19 @@ namespace comet {
 	 * \todo  Can we add an optional user-defined message to this?
 	 */
 	template<typename Itf>
-	com_error com_error_from_interface(
-		com_ptr<Itf> failure_source, HRESULT hr)
+	com_error com_error_from_interface(Itf* failure_source, HRESULT hr)
 	{
-		if (impl::supports_ErrorInfo(failure_source.get()))
+		if (impl::supports_ErrorInfo(failure_source))
 			return com_error(hr, impl::GetErrorInfo());
 		else
 			return com_error(hr);
+	}
+
+	template<typename Itf>
+	com_error com_error_from_interface(
+		com_ptr<Itf> failure_source, HRESULT hr)
+	{
+		return com_error_from_interface(failure_source.get(), hr);
 	}
 
 	//@}
