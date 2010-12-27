@@ -24,6 +24,8 @@
 #include <stdexcept>
 #include <wtypes.h>
 
+#include <OAIdl.h>
+
 #pragma warning(push)
 #pragma warning(disable : 4290)
 
