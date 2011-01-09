@@ -174,42 +174,70 @@ namespace comet {
 		}
 
 	private:
-		void get_str( std::string &ret) const throw()
+		void get_str(std::string& ret) const
 		{
-			if (ei_.is_null() == false) {
+			if (ei_.is_null() == false)
+			{
 				bstr_t bs;
-				if (SUCCEEDED(ei_->GetDescription(bs.out())) && !bs.is_empty()) {
+				if (SUCCEEDED(ei_->GetDescription(bs.out())) && !bs.is_empty())
+				{
 					ret= bs.s_str();
 					return;
 				}
 			}
-			LPVOID lpMsgBuf;
-			if (FormatMessageA( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-						NULL, hr_, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-						(LPSTR) &lpMsgBuf, 0, NULL))
+
+			char* lpMsgBuf;
+			if (FormatMessageA(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+				FORMAT_MESSAGE_IGNORE_INSERTS, NULL, hr_,
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+				reinterpret_cast<char*>(&lpMsgBuf), 0, NULL))
 			{
-				ret = (const char*)lpMsgBuf;
+				char* lpEnd = lpMsgBuf;
+				while (*lpEnd != '\0')
+					lpEnd++;
+
+				while (lpEnd > lpMsgBuf && // Trim trailing newlines
+					(*(lpEnd - 1) == '\n' || *(lpEnd - 1) == '\r'))
+					lpEnd--;
+
+				ret.assign(lpMsgBuf, lpEnd - lpMsgBuf);
 				LocalFree(lpMsgBuf);
 			}
 		}
-		void get_str( std::wstring &ret) const throw()
+
+		void get_str(std::wstring& ret) const
 		{
-			if (ei_.is_null() == false) {
+			if (ei_.is_null() == false)
+			{
 				bstr_t bs;
-				if (SUCCEEDED(ei_->GetDescription(bs.out())) && !bs.is_empty()) {
+				if (SUCCEEDED(ei_->GetDescription(bs.out())) && !bs.is_empty())
+				{
 					 ret = bs.w_str();
 					 return;
 				}
 			}
-			LPVOID lpMsgBuf;
-			if (FormatMessageW( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-						NULL, hr_, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-						(LPWSTR) &lpMsgBuf, 0, NULL))
+
+			wchar_t* lpMsgBuf;
+			if (FormatMessageW(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+				FORMAT_MESSAGE_IGNORE_INSERTS, NULL, hr_,
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+				reinterpret_cast<wchar_t*>(&lpMsgBuf), 0, NULL))
 			{
-				ret = (const wchar_t*)lpMsgBuf;
+				wchar_t* lpEnd = lpMsgBuf;
+				while (*lpEnd != L'\0')
+					lpEnd++;
+
+				while (lpEnd > lpMsgBuf && // Trim trailing newlines
+					(*(lpEnd - 1) == L'\n' || *(lpEnd - 1) == L'\r'))
+					lpEnd--;
+
+				ret.assign(lpMsgBuf, lpEnd - lpMsgBuf);
 				LocalFree(lpMsgBuf);
 			}
 		}
+
 	public:
 
 		/** Return the HRESULT for the error.
