@@ -33,10 +33,9 @@ namespace comet {
 	 * STL style iterator for COM enumerator interfaces
 	 */
 	template<typename E, typename T=enumerated_type_of<E>::is>
-	class enum_iterator
+	class enum_iterator : public std::iterator<std::input_iterator_tag, T>
 	{
 		typedef E                                   enumerator_type;
-		typedef T                                   value_type;
 		typedef typename enumerated_type_of<E>::is  element_type;
 		typedef impl::type_policy<element_type>     policy;
 
@@ -51,10 +50,16 @@ namespace comet {
 
 		static value_type copy_value_from_other(const enum_iterator& other)
 		{
-			value_type v;
 			if (other.is_value_set_)
-				return policy::init(v, other.value_);
-			return v;
+			{
+				value_type v;
+				policy::init(v, other.value_);
+				return v;
+			}
+			else
+			{
+				return value_type();
+			}
 		}
 
 		value_type value_;
