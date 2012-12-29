@@ -40,7 +40,7 @@ yet, there isn't much difference.
 * [Introducing Comet](http://www.codeproject.com/Articles/5748/Introducing-Comet)
 * [Introduction to Comet](http://www.lambdasoft.dk/comet/introduction/index.htm)
 
-And last but not least, the [Comet version 1 documentation](http://www.lambdasoft.dk/comet/documentation.htm)
+And last but not least, the [Comet version 1 documentation](http://www.lambdasoft.dk/comet/documentation.htm).
 
 Are there any dependencies?
 ---------------------------
@@ -51,8 +51,8 @@ don't even need that.
 [Sofus Mortensen]: http://www.lambdasoft.dk/sofus/index.html
 [Paul Hollingsworth]: http://paulhollingsworth.com/
 [Mikael Lindgren]: mailto:mikael.lindgren@chaos.se
-[Kyle Alons]: kalons@yahoo.com
-[Vladimir Voinkov]: voinkovv@mail.ru
+[Kyle Alons]: mailto:kalons@yahoo.com
+[Vladimir Voinkov]: mailto:voinkovv@mail.ru
 [Alexander Lamaison]: https://github.com/alamaison
 [Boost]: http://www.boost.org
 [Doxygen]: http://www.doxygen.org/
