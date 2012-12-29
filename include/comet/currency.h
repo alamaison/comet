@@ -352,7 +352,9 @@ namespace comet
             }
 
             //! Format the string with the given digits, precision and width.
-            std::basic_string<TCHAR> format(int mindigits=0,int minprecision=0, int width=0) const
+            std::basic_string<TCHAR> format(
+                std::streamsize mindigits=0, std::streamsize minprecision=0,
+                std::streamsize width=0) const
             {
                 std::basic_string<TCHAR> strval;
                 do_format(strval, mindigits, minprecision, width);
@@ -374,13 +376,17 @@ namespace comet
               * \todo Obey ostream formats for: fillchar(), ios_base::left, ios_base::internal, ios_base::showpos
               */
             template <typename CH>
-            void do_format(std::basic_string<CH> &val, int mindigits,int minprecision, int /*width*/) const
+            void do_format(
+                std::basic_string<CH>& val, std::streamsize mindigits,
+                std::streamsize minprecision, std::streamsize /*width*/) const
             {
                 COMET_ASSERT(mindigits>=0 && minprecision >=0 );
                 if(minprecision> 4)  minprecision =4;
 
                 // Add in the 4 fixed decimal points
-                int pr=((0 <= minprecision && minprecision <=4)?(4-minprecision):0);
+                std::streamsize pr =
+                    ((0 <= minprecision && minprecision <=4) ?
+                        (4-minprecision) : 0);
                 mindigits+=4;
 
                 val.erase();
@@ -392,7 +398,7 @@ namespace comet
                     value=-value;
                 }
                 // Put in the digits backwards
-                int digit=0;
+                std::streamsize digit=0;
                 bool output=false;
                 while(value !=0 || digit < mindigits)
                 {
