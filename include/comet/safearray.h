@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2000, 2001, 2002 Sofus Mortensen, Michael Geddes
+ * Copyright © 2012 Alexander Lamaison
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -19,8 +20,6 @@
 #ifndef COMET_SAFEARRAY_H
 #define COMET_SAFEARRAY_H
 
-#include <iterator>
-
 #include <comet/config.h>
 #include <comet/ptr.h>
 #include <comet/bstr.h>
@@ -30,6 +29,11 @@
 #include <comet/type_traits.h>
 #include <comet/common.h>
 #include <comet/uuid.h>
+
+#include <iterator>
+#include <limits>
+#include <stdexcept>
+
 #ifndef NDEBUG
 #define COMET_ITERATOR_DEBUG
 #endif
@@ -779,10 +783,19 @@ namespace comet {
          */
         explicit safearray_t(size_type sz, index_type lb)
         {
+            if (sz > (std::numeric_limits<ULONG>::max)() ||
+                sz < (std::numeric_limits<ULONG>::min)())
+                throw std::overflow_error(
+                    "Cannot create array of requested size");
+
 #ifndef COMET_PARTIAL_SPECIALISATION
-            psa_ = ::SafeArrayCreateVectorEx(traits::vt, lb, sz, get_extras<impl::sa_traits_extras_type(traits::extras_type)>::extras());
+            psa_ = ::SafeArrayCreateVectorEx(
+                traits::vt, lb, static_cast<ULONG>(sz),
+                get_extras<impl::sa_traits_extras_type(traits::extras_type)>::extras());
 #else
-            psa_ = ::SafeArrayCreateVectorEx(traits::vt, lb, sz, get_extras<T,impl::sa_traits_extras_type(traits::extras_type)>::extras());
+            psa_ = ::SafeArrayCreateVectorEx(
+                traits::vt, lb, static_cast<ULONG>(sz),
+                get_extras<T,impl::sa_traits_extras_type(traits::extras_type)>::extras());
 #endif
             if (psa_ == 0) throw std::bad_alloc();
 
