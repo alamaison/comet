@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2000-2004 Sofus Mortensen, Michael Geddes
+ * Copyright © 2012 Alexander Lamaison
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -650,7 +651,12 @@ namespace comet {
         void assign(IT first, IT last)
         {
             bstr_t t( std::distance(first, last) );
+
+#pragma warning(push)
+#pragma warning(disable:4996)
             std::copy(first, last, t.begin());
+#pragma warning(pop)
+
             swap(t);
         }
 
