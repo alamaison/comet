@@ -698,13 +698,13 @@ struct comet::test<17>
     void run()
     {
         bstr_t bs = L"Sofus";
-        int l = bs.length();
+        size_t l = bs.length();
 
         std::string t = "Sofus";
-        int l1 = t.length();
+        size_t l1 = t.length();
 
         std::string s = bs.s_str();
-        int l2 = s.length();
+        size_t l2 = s.length();
 
         if (l1 != l2) throw std::runtime_error("bstr_t to std::string conversion is flawed");
         if (s != t) throw std::runtime_error("bstr_t to std::string conversion is flawed");
@@ -826,7 +826,7 @@ struct comet::test<22>
         bstr_t s = "foo";
         if (s.length() != 3) throw std::exception("conversion from MBCS to wide char is broken");
 
-        int l = s.length();
+        size_t l = s.length();
 
         std::string s1 = s;
         if (s1.length() != 3) throw std::exception("conversion from wide char to narrow char is broken");
