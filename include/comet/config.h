@@ -13,16 +13,16 @@
  * granted, provided the above notices are retained, and a notice that 
  * the code was modified is included with the above copyright notice. 
  *
- * This header is part of comet.
- * http://www.lambdasoft.dk/comet
+ * This header is part of Comet version 2.
+ * https://github.com/alamaison/comet
  */
 
 #ifndef COMET_CONFIG_H
 #define COMET_CONFIG_H
 
-#define COMET_MAJOR_VER 1
+#define COMET_MAJOR_VER 2
 #define COMET_BUILDTYPE gamma
-#define COMET_MINOR_VER 33
+#define COMET_MINOR_VER 0
 #define COMET_BUILD 20091110
 
 #ifndef COMET_BUILD_VERSION_ONLY

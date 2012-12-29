@@ -12,8 +12,8 @@
  * granted, provided the above notices are retained, and a notice that 
  * the code was modified is included with the above copyright notice. 
  *
- * This header is part of comet.
- * http://www.lambdasoft.dk/comet
+ * This header is part of Comet version 2.
+ * https://github.com/alamaison/comet
  */
 
 #ifndef COMET_EXE_SERVER_H
