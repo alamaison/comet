@@ -1,9 +1,9 @@
 ========================================================================
-                    COMET DLL Server: 
+                    COMET DLL Server:
 ========================================================================
 
 
-The AppWizard has created this DLL COM server for you. 
+The AppWizard has created this DLL COM server for you.
 
 This file contains a summary of what you will find in each of the files that
 make up your project.
@@ -22,29 +22,29 @@ ParentChild2.dsp
     project (.dsp) file, but they should export the makefiles locally.
 
 ParentChild2.idl
-	This is the .IDL file that is used to generate the type library and header file for your DLL.
-	If you right click this file and select "Settings", you'll see that the app wizard has created
-	a custom build step. The custom build step runs a batch file called "idl2h.bat", which runs
-	first MIDL.EXE to generate ParentChild2.tlb, and then tlb2h.exe to generate a header file
-	called CometExampleParentChild2.h.
-	
-	Note that MIDL is _only_ used to generate the type library file "ParentChild2.tlb".
-	It is not used to generate the C++ header file. tlb2h.exe generates the header file.
+    This is the .IDL file that is used to generate the type library and header file for your DLL.
+    If you right click this file and select "Settings", you'll see that the app wizard has created
+    a custom build step. The custom build step runs a batch file called "idl2h.bat", which runs
+    first MIDL.EXE to generate ParentChild2.tlb, and then tlb2h.exe to generate a header file
+    called CometExampleParentChild2.h.
+
+    Note that MIDL is _only_ used to generate the type library file "ParentChild2.tlb".
+    It is not used to generate the C++ header file. tlb2h.exe generates the header file.
 
 ParentChild2.cpp
     This file is the main DLL source file that contains the definition of
     DllMain, DllGetClassObject,  DllCanUnloadNow, DllRegisterServer
-	and DllUnregisterServer. These 5 functions are implemented by the
-	macro COMET_DECLARE_DLL_FUNCTIONS. This
-	macro is very simple - it forwards the declarations
-	on to static methods of the same name on the class
-	that you supply.
+    and DllUnregisterServer. These 5 functions are implemented by the
+    macro COMET_DECLARE_DLL_FUNCTIONS. This
+    macro is very simple - it forwards the declarations
+    on to static methods of the same name on the class
+    that you supply.
 
 ParentChild2.rc
     This file is the resource script that is used to generate the resources
-	embedded into your DLL. It refers to the type library generated from
-	ParentChild2.idl - so you will have to build the project once (and generate
-	the type library) before you can edit the resources in the resource editor.
+    embedded into your DLL. It refers to the type library generated from
+    ParentChild2.idl - so you will have to build the project once (and generate
+    the type library) before you can edit the resources in the resource editor.
 
 /////////////////////////////////////////////////////////////////////////////
 Other Standard Files:

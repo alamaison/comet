@@ -253,7 +253,7 @@ struct ATL_NO_VTABLE DECLSPEC_UUID("D1855C2E-2275-4B80-9657-E1E6E26AFB64") ICach
     STDMETHODIMP raw_Remove(BSTR par___MIDL_0010);
 
     //
-    // These are the methods you need to implement: 
+    // These are the methods you need to implement:
     //
 /*
     variant_t GetValue(const bstr_t& par_idx, const bstr_t& par_key);

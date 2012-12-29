@@ -1,17 +1,17 @@
-/** \file 
+/** \file
   * Included by all comet headers to provide compiler-specific
   * configuration.
   */
 /*
  * Copyright © 2000-2002 Sofus Mortensen
  *
- * This material is provided "as is", with absolutely no warranty 
- * expressed or implied. Any use is at your own risk. Permission to 
- * use or copy this software for any purpose is hereby granted without 
- * fee, provided the above notices are retained on all copies. 
- * Permission to modify the code and to distribute modified code is 
- * granted, provided the above notices are retained, and a notice that 
- * the code was modified is included with the above copyright notice. 
+ * This material is provided "as is", with absolutely no warranty
+ * expressed or implied. Any use is at your own risk. Permission to
+ * use or copy this software for any purpose is hereby granted without
+ * fee, provided the above notices are retained on all copies.
+ * Permission to modify the code and to distribute modified code is
+ * granted, provided the above notices are retained, and a notice that
+ * the code was modified is included with the above copyright notice.
  *
  * This header is part of Comet version 2.
  * https://github.com/alamaison/comet
@@ -27,9 +27,9 @@
 
 #ifndef COMET_BUILD_VERSION_ONLY
 
-#ifndef COMET_NO_DECLSPEC_PROPERTY 
-#define COMET_ALLOW_DECLSPEC_PROPERTY 
-#endif // COMET_NO_DECLSPEC_PROPERTY 
+#ifndef COMET_NO_DECLSPEC_PROPERTY
+#define COMET_ALLOW_DECLSPEC_PROPERTY
+#endif // COMET_NO_DECLSPEC_PROPERTY
 
 #pragma warning(disable : 4786)
 #pragma warning(disable : 4042)
@@ -52,19 +52,19 @@
 #define COMET_TL_TRUNC
 #else
 //VC 7.1 support partial specialization
-#ifdef _MSC_VER  
+#ifdef _MSC_VER
 #endif
 
 #ifdef __ICL
 # define COMET_PARTIAL_SPECIALISATION
 # define COMET_NESTED_TEMPLATES
 #else
-# ifdef _MSC_VER 
+# ifdef _MSC_VER
 #  if _MSC_VER < 1300
 // Versions less than VC7 can't handle the rethrow & catch exception trick.
 #    define COMET_DISABLE_EXCEPTION_RETHROW_CATCH
 #  else // _MSC_VER >= 1300
-#    define COMET_GOOD_RECURSIVE_STRUCT  
+#    define COMET_GOOD_RECURSIVE_STRUCT
 #    define COMET_CONST_MEMBER_INIT
 #    if _MSC_VER >= 1310
 #      define COMET_PARTIAL_SPECIALISATION
@@ -107,8 +107,8 @@
 
 // WIN32 defines for GCC
 #define NONAMELESSUNION
-#define NOCOMATTRIBUTE 
-#endif 
+#define NOCOMATTRIBUTE
+#endif
 #endif
 
 
@@ -116,7 +116,7 @@
 // required by GCC.
 #ifdef _MSC_VER
 #if _MSC_VER <= 1300
-#define COMET_STRICT_TYPENAME 
+#define COMET_STRICT_TYPENAME
 #else
 #define COMET_STRICT_TYPENAME typename
 #endif
@@ -147,7 +147,7 @@
 #ifdef COMET_PARTIAL_SPECIALISATION
 // this code to "detect" STLport is stolen from <boost/config.hpp>
 //#if __SGI_STL_PORT >= 0x400 || __SGI_STL_PORT >= 0x321 && defined(__STL_USE_NAMESPACES)
-#ifdef __SGI_STL 
+#ifdef __SGI_STL
 #define COMET_STD_ITERATOR
 #else
 #ifdef __MINGW32__
@@ -159,7 +159,7 @@ __STL_END_NAMESPACE
 #else
 #ifdef _CPPLIB_VER
 #define COMET_STD_ITERATOR
-#endif 
+#endif
 #endif /* COMET_PARTIAL_SPECIALISATION */
 #endif
 
@@ -218,9 +218,9 @@ __STL_END_NAMESPACE
 #endif
 
 #define COMET_DECLARE_SWAP(TYPE) template<> inline void swap(TYPE &x, TYPE &y)\
-	{\
-	x.swap(y);\
-	}
+    {\
+    x.swap(y);\
+    }
 
 const unsigned short COMET_VARIANT_TRUE  = (unsigned short)(0xffff);
 const unsigned short COMET_VARIANT_FALSE = 0;

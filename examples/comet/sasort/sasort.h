@@ -5,7 +5,7 @@ class coclass_implementation<SASort> : public coclass<SASort>
 {
 public:
     void Sort(safearray_t<variant_t>& sa)
-	{
-		std::sort(sa.begin(), sa.end());
-	}
+    {
+        std::sort(sa.begin(), sa.end());
+    }
 };

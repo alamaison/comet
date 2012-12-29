@@ -80,149 +80,149 @@ namespace comet {
 #ifndef COMET_LW_LOCK_SPIN
 #define COMET_LW_LOCK_SPIN Sleep(0)
 #endif
-	/*! \addtogroup Misc
-	 */
-	//@{
+    /*! \addtogroup Misc
+     */
+    //@{
 
-	/** Provide a lightweight lock imlementation.
-	 *  See \ref cometlwlock for more information and warnings.
-	 *  \sa auto_reader_lock auto_writer_lock
-	 */
-	class lw_lock
-	{
-	//  Interface
+    /** Provide a lightweight lock imlementation.
+     *  See \ref cometlwlock for more information and warnings.
+     *  \sa auto_reader_lock auto_writer_lock
+     */
+    class lw_lock
+    {
+    //  Interface
 
-	public:
-		///  Constructor
-		lw_lock()
-		{
-			reader_count_ = 0;
-			writer_count_ = 0;
-		}
+    public:
+        ///  Constructor
+        lw_lock()
+        {
+            reader_count_ = 0;
+            writer_count_ = 0;
+        }
 
-		///  Destructor
-		~lw_lock()
-		{
-			COMET_ASSERT( reader_count_ == 0 );
-			COMET_ASSERT( writer_count_ == 0 );
-		}
+        ///  Destructor
+        ~lw_lock()
+        {
+            COMET_ASSERT( reader_count_ == 0 );
+            COMET_ASSERT( writer_count_ == 0 );
+        }
 
-		///  Reader lock acquisition
-		void enter_reader() const
-		{
-			while( 1 )
-			{
-				//  If there's a writer already, spin without unnecessarily
-				//  interlocking the CPUs
+        ///  Reader lock acquisition
+        void enter_reader() const
+        {
+            while( 1 )
+            {
+                //  If there's a writer already, spin without unnecessarily
+                //  interlocking the CPUs
 
-				if( writer_count_ != 0 )
-				{
-					COMET_LW_LOCK_SPIN;
-					continue;
-				}
+                if( writer_count_ != 0 )
+                {
+                    COMET_LW_LOCK_SPIN;
+                    continue;
+                }
 
-				//  Add to the readers list
+                //  Add to the readers list
 
-				InterlockedIncrement((long *)&reader_count_ );
+                InterlockedIncrement((long *)&reader_count_ );
 
-				//  Check for writers again (we may have been pre-empted). If
-				//  there are no writers writing or waiting, then we're done.
+                //  Check for writers again (we may have been pre-empted). If
+                //  there are no writers writing or waiting, then we're done.
 
-				if( writer_count_ == 0 )
-					break;
+                if( writer_count_ == 0 )
+                    break;
 
-				//  Remove from the readers list, spin, try again
+                //  Remove from the readers list, spin, try again
 
-				InterlockedDecrement((long *)&reader_count_ );
-				COMET_LW_LOCK_SPIN;
-			}
-		}
+                InterlockedDecrement((long *)&reader_count_ );
+                COMET_LW_LOCK_SPIN;
+            }
+        }
 
-		///  Reader lock release
-		void leave_reader() const
-		{
-			InterlockedDecrement((long *)&reader_count_ );
-		}
+        ///  Reader lock release
+        void leave_reader() const
+        {
+            InterlockedDecrement((long *)&reader_count_ );
+        }
 
-		/// Writer lock acquisition
-		void enter_writer()
-		{
-			//  See if we can become the writer (expensive, because it inter-
-			//  locks the CPUs, so writing should be an infrequent process)
+        /// Writer lock acquisition
+        void enter_writer()
+        {
+            //  See if we can become the writer (expensive, because it inter-
+            //  locks the CPUs, so writing should be an infrequent process)
 
-			while( InterlockedExchange((long *)&writer_count_, 1 ) == 1 )
-			{
-				COMET_LW_LOCK_SPIN;
-			}
+            while( InterlockedExchange((long *)&writer_count_, 1 ) == 1 )
+            {
+                COMET_LW_LOCK_SPIN;
+            }
 
-			//  Now we're the writer, but there may be outstanding readers.
-			//  Spin until there aren't any more; new readers will wait now
-			//  that we're the writer.
+            //  Now we're the writer, but there may be outstanding readers.
+            //  Spin until there aren't any more; new readers will wait now
+            //  that we're the writer.
 
-			while( reader_count_ != 0 )
-			{
-				COMET_LW_LOCK_SPIN;
-			}
-		}
+            while( reader_count_ != 0 )
+            {
+                COMET_LW_LOCK_SPIN;
+            }
+        }
 
-		///  Writer lock release
-		void leave_writer()
-		{
-			writer_count_ = 0;
-		}
+        ///  Writer lock release
+        void leave_writer()
+        {
+            writer_count_ = 0;
+        }
 
-	//  Implementation
+    //  Implementation
 
-	private:
-		mutable long volatile reader_count_;
-		mutable long volatile writer_count_;
+    private:
+        mutable long volatile reader_count_;
+        mutable long volatile writer_count_;
 
-		// Declare class non-copyable
-		lw_lock(const lw_lock&);
-		lw_lock& operator=(const lw_lock&);
-	};
+        // Declare class non-copyable
+        lw_lock(const lw_lock&);
+        lw_lock& operator=(const lw_lock&);
+    };
 
-	/** \class auto_reader_lock lw_lock.h comet/lw_lock.h
-	 *  Auto-release locking class for lw_lock Read acces.
-	 *  \sa lw_lock auto_writer_lock
-	 */
-	class auto_reader_lock {
-	public:
-		explicit auto_reader_lock(const lw_lock& cs) : cs_(cs) {
-			cs_.enter_reader();
-		}
+    /** \class auto_reader_lock lw_lock.h comet/lw_lock.h
+     *  Auto-release locking class for lw_lock Read acces.
+     *  \sa lw_lock auto_writer_lock
+     */
+    class auto_reader_lock {
+    public:
+        explicit auto_reader_lock(const lw_lock& cs) : cs_(cs) {
+            cs_.enter_reader();
+        }
 
-		~auto_reader_lock() {
-			cs_.leave_reader();
-		}
+        ~auto_reader_lock() {
+            cs_.leave_reader();
+        }
 
-	private:
-		auto_reader_lock& operator=(const auto_reader_lock&);
-		auto_reader_lock(const auto_reader_lock&);
+    private:
+        auto_reader_lock& operator=(const auto_reader_lock&);
+        auto_reader_lock(const auto_reader_lock&);
 
-		const lw_lock& cs_;
-	};
+        const lw_lock& cs_;
+    };
 
-	/** \class auto_writer_lock lw_lock.h comet/lw_lock.h
-	 *  Auto-release locking class for lw_lock write acces.
-	 *  \sa lw_lock auto_reader_lock
-	 */
-	class auto_writer_lock {
-	public:
-		explicit auto_writer_lock(lw_lock& cs) : cs_(cs) {
-			cs_.enter_writer();
-		}
+    /** \class auto_writer_lock lw_lock.h comet/lw_lock.h
+     *  Auto-release locking class for lw_lock write acces.
+     *  \sa lw_lock auto_reader_lock
+     */
+    class auto_writer_lock {
+    public:
+        explicit auto_writer_lock(lw_lock& cs) : cs_(cs) {
+            cs_.enter_writer();
+        }
 
-		~auto_writer_lock() {
-			cs_.leave_writer();
-		}
+        ~auto_writer_lock() {
+            cs_.leave_writer();
+        }
 
-	private:
-		auto_writer_lock& operator=(const auto_writer_lock&);
-		auto_writer_lock(const auto_writer_lock&);
+    private:
+        auto_writer_lock& operator=(const auto_writer_lock&);
+        auto_writer_lock(const auto_writer_lock&);
 
-		lw_lock& cs_;
-	};
-	//@}
+        lw_lock& cs_;
+    };
+    //@}
 
 }

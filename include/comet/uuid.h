@@ -27,61 +27,61 @@
 
 namespace comet {
 
-	template<typename C>
-	void uuid_t::copy_to_str(C s[36]) const throw()
-	{
-		const unsigned char *p = reinterpret_cast<const unsigned char*>(this);
+    template<typename C>
+    void uuid_t::copy_to_str(C s[36]) const throw()
+    {
+        const unsigned char *p = reinterpret_cast<const unsigned char*>(this);
 
-		for (int i=0; i<20; ++i)
-		{
-			int j = uuid_table()[i];
-			if (j >= 0)
-			{
-				const unsigned char byt = p[j];
-				*s = hex_table()[byt >> 4];
-				++s;
-				*s = hex_table()[byt & 0xf];
-			}
-			else *s = L'-';
-			++s;
-		}
-	}
+        for (int i=0; i<20; ++i)
+        {
+            int j = uuid_table()[i];
+            if (j >= 0)
+            {
+                const unsigned char byt = p[j];
+                *s = hex_table()[byt >> 4];
+                ++s;
+                *s = hex_table()[byt & 0xf];
+            }
+            else *s = L'-';
+            ++s;
+        }
+    }
 
-	template<typename C>
-	bool uuid_t::init_from_str(const C s[], size_t len) throw()
-	{
-		unsigned char *p = reinterpret_cast<unsigned char*>(this);
+    template<typename C>
+    bool uuid_t::init_from_str(const C s[], size_t len) throw()
+    {
+        unsigned char *p = reinterpret_cast<unsigned char*>(this);
 
-		bool has_brace;
-		switch (len)
-		{
-			default: return false;
-			case 36: has_brace = false; break;
-			case 38:
-				if (*s != C('{'))
-					return false;
-				has_brace = true;
-				++s;
-				break;
-		}
+        bool has_brace;
+        switch (len)
+        {
+            default: return false;
+            case 36: has_brace = false; break;
+            case 38:
+                if (*s != C('{'))
+                    return false;
+                has_brace = true;
+                ++s;
+                break;
+        }
 
-		int i;
-		for (i=0; i<20; ++i)
-		{
-			int j = uuid_table()[i];
-			if (j >= 0)
-			{
-				int a = parse_nibble(*s);
-				++s;
-				int b = parse_nibble(*s);
-				p[j] = unsigned char(a << 4 | b);
-			}
-			else if (*s != C('-'))
-				return false;
-			++s;
-		}
-		return (! has_brace) || (*s == C('}'));
-	}
+        int i;
+        for (i=0; i<20; ++i)
+        {
+            int j = uuid_table()[i];
+            if (j >= 0)
+            {
+                int a = parse_nibble(*s);
+                ++s;
+                int b = parse_nibble(*s);
+                p[j] = unsigned char(a << 4 | b);
+            }
+            else if (*s != C('-'))
+                return false;
+            ++s;
+        }
+        return (! has_brace) || (*s == C('}'));
+    }
 
 }
 

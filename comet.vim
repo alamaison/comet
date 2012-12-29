@@ -9,9 +9,9 @@ if !exists('g:TLB2H')
   if !executable(g:TLB2H)
     let g:TLB2H=expand('<sfile>:h').'\bin\tlb2h.exe'
     if !executable(g:TLB2H)
-      let g:TLB2H='c:\lambdasoft\comet\bin\tlb2h' 
+      let g:TLB2H='c:\lambdasoft\comet\bin\tlb2h'
       if !executable(g:TLB2H)
-        let g:TLB2H='t:\comet\bin\tlb2h' 
+        let g:TLB2H='t:\comet\bin\tlb2h'
       endif
     endif
   endif
@@ -28,8 +28,8 @@ fun! s:CometHeaderWizard()
     if(curdir == nextdir) | break | endif
     let curdir=nextdir
   endwhile
-  if files == '' 
-    echo "no Files" 
+  if files == ''
+    echo "no Files"
     return 0
   endif
 
@@ -81,7 +81,7 @@ fun! s:CometSourceWizard(coclass, iface)
   else
     let which= a:coclass
   endif
-  
+
   let opt=((which=='')?(wizard_opt_all):(wizard_opt_some.which))
   let here=line('.')
   exe '.r!'.g:TLB2H.' '.opt.' '.dir.'*.tlb'
@@ -98,7 +98,7 @@ if exists(':Bmenu')
     Bamenu 10.11 &Code.Comet\ &Interface\ Wizard :call <SID>CometSourceWizard('*',1)<CR>
     Bamenu 10.12 &Code.Comet\ Wi&zard\ Coclasses :call <SID>CometSourceWizard(inputdialog('Class Name:'),0)<CR>
     Bamenu 10.13 &Code.Comet\ Wiza&rd\ Interface :call <SID>CometSourceWizard(inputdialog('Interface Name:'),1)<CR>
-    Bamenu 10.14 &Code.Comet\ Header :call 
+    Bamenu 10.14 &Code.Comet\ Header :call
   endif
 endif
 

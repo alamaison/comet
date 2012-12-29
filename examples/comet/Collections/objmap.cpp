@@ -3,10 +3,10 @@
 
 com_ptr<IEnumVARIANT> ObjectMapKeys::Enum()
 {
-	return get_parent()->EnumKeys();
+    return get_parent()->EnumKeys();
 }
 
 com_ptr<IEnumVARIANT> ObjectMapValues::Enum()
 {
-	return get_parent()->EnumValues();
+    return get_parent()->EnumValues();
 }

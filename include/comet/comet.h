@@ -4,13 +4,13 @@
 /*
  * Copyright © 2000, 2001 Sofus Mortensen, Michael Geddes
  *
- * This material is provided "as is", with absolutely no warranty 
- * expressed or implied. Any use is at your own risk. Permission to 
- * use or copy this software for any purpose is hereby granted without 
- * fee, provided the above notices are retained on all copies. 
- * Permission to modify the code and to distribute modified code is 
- * granted, provided the above notices are retained, and a notice that 
- * the code was modified is included with the above copyright notice. 
+ * This material is provided "as is", with absolutely no warranty
+ * expressed or implied. Any use is at your own risk. Permission to
+ * use or copy this software for any purpose is hereby granted without
+ * fee, provided the above notices are retained on all copies.
+ * Permission to modify the code and to distribute modified code is
+ * granted, provided the above notices are retained, and a notice that
+ * the code was modified is included with the above copyright notice.
  *
  * This header is part of Comet version 2.
  * https://github.com/alamaison/comet
@@ -21,7 +21,7 @@
 
 #include <comet/config.h>
 
-/** 
+/**
  @mainpage Comet
 
  See https://github.com/alamaison/comet
@@ -76,7 +76,7 @@
 /** \page cometcatchallexception Exception Catching Policy
 In an ideal world, Microsoft would have adhered to the C++ standard, and made
 <kbd>catch(...)</kbd> not catch system exceptions like 'Access Violation',
-however this is not the case. 
+however this is not the case.
 
 To make it worse, not only do system exceptions get caught by <kbd>catch(...)</kbd>,
 they also <b>bypass the stack unwinding</b>.  This is quite problematic in an
@@ -270,7 +270,7 @@ See \ref cometautoexpusage for more information on how to use this.
 \li Bug fixes to datetime.h (Michael Geddes)
 
 \par Version 1 beta 22 (2002-8-19)
-\li Update of tlb2h - better handling of namespace mangling, and support for 
+\li Update of tlb2h - better handling of namespace mangling, and support for
 unwrapping the type of aliases without unwrapping the name of the aliases (Michael Geddes).
 \li Fixed bug in uuid_fwd. (John Harrison)
 \li Added oleidl_comtypes.h. (Gabriel Barta)
@@ -311,7 +311,7 @@ unwrapping the type of aliases without unwrapping the name of the aliases (Micha
 \li Revised treatment of [in, out] parameters in tlb2h. The old implementation could cause double deletion of [in. out] parameters when an exception was thrown. (Sofus Mortensen)
 \li Revised all wrapper classes, in order for create_reference to create a mutable reference and create_const_reference an immutable reference. (Sofus Mortensen)
 \li Revised locking in safearray_t. safearray_t::create_reference and safearray_t::create_const_reference is no longer doing automatic locking. (Sofus Mortensen)
-\li tlb2h now generates #import alike smart pointer typedef. Ie. interface IFoo will be matched with a typedef com_ptr<IFoo> IFooPtr. (Sofus Mortensen) 
+\li tlb2h now generates #import alike smart pointer typedef. Ie. interface IFoo will be matched with a typedef com_ptr<IFoo> IFooPtr. (Sofus Mortensen)
 \li Added support for datetime_t and currency_t to safearray_t. (Sofus Mortensen)
 \li Added t_str() to bstr_t for converting to tstring. (Sofus Mortensen)
 
@@ -369,16 +369,16 @@ unwrapping the type of aliases without unwrapping the name of the aliases (Micha
 
 \par Version 1 beta 12 (2001-12-20)
 
-\li Revision of embedded_object. embedded_object now takes parent type as first argument, arguments 2, 3, 4, .. denotes interfaces to implement. 
-	embedded_object_1 has been removed. embedded_object2 has been added, extends embedded_object with functionality to 
-	disconnect a child object from its parent.  (Sofus Mortensen with help from Kyle Alons).
+\li Revision of embedded_object. embedded_object now takes parent type as first argument, arguments 2, 3, 4, .. denotes interfaces to implement.
+    embedded_object_1 has been removed. embedded_object2 has been added, extends embedded_object with functionality to
+    disconnect a child object from its parent.  (Sofus Mortensen with help from Kyle Alons).
 \li Added new file dispatch.h with specialisation of wrap_t<IDispatch> with similar (but superior) functionality as CComDispatchDriver.
 \li Added new class dynamic_dispatch to dispatch.h. Use dynamic_dispatch to dynamically implement IDispatch -  adding methods and properties at runtime. (Sofus Mortensen)
 \li Changed interface of sink_impl so that unadvise no longer takes an argument. Additionally the destructor will unadvise if necessary. (Sofus Mortensen)
 \li Added new file uuid.h with GUID/UUID/CLSID wrapper called uuid_t. (Sofus Mortensen)
 \li Changed tlb2h to support new wrapper uuid_t. (Sofus Mortensen)
 \li Fixed potential thread safety problem regarding class factories. (Sofus Mortensen, Paul Hollingsworth)
-                
+
 \par Version 1 beta 11 (2001-11-16)
 
 \li Major fix to tlb2h. tlb2h now supports properties in dispinterfaces. (Sofus Mortensen)
@@ -387,39 +387,39 @@ unwrapping the type of aliases without unwrapping the name of the aliases (Micha
 \li Fixed problem with error messages ending up as garbage in tlb2h. (Kyle Alons)
 \li Various fixes regarding safearray_t. (Michael Geddes and Sofus Mortensen)
 \li Various other minor fixes. (Sofus Mortensen)
-                
+
 \par Version 1 beta 10 (2001-10-17)
 
-\li class coclass changed so that the 3, 4, ... template parameters specifify additional interfaces to implement. 
-	Example:
-	\code
-    template<> coclass_implementation<Foo> : public coclass<Foo, thread_model::Both, IBar> 
-	\endcode
-	(Sofus Mortensen)
-\li Aggregating another component is now done by adding class aggregates to the type list of interfaces. First template argument of class aggregates is the coclass 
+\li class coclass changed so that the 3, 4, ... template parameters specifify additional interfaces to implement.
+    Example:
+    \code
+    template<> coclass_implementation<Foo> : public coclass<Foo, thread_model::Both, IBar>
+    \endcode
+    (Sofus Mortensen)
+\li Aggregating another component is now done by adding class aggregates to the type list of interfaces. First template argument of class aggregates is the coclass
     to aggregating. The 2, 4, ... template arguments specify which interfaces to aggregate. If no interfaces have been specified, all interfaces will be aggregated.
-	Example:
-	\code
+    Example:
+    \code
     template<> coclass_implementation<Foo> : public coclass<Foo, thread_model::Both, aggregates<Bar, IBar> >
-	\endcode
-	(Sofus Mortensen)
+    \endcode
+    (Sofus Mortensen)
 \li Added cmp method to bstr_base which a.o.t. can be configured for case insensitive comparision. (Michael Geddes)
 \li Added comparison functors based on cmp to bstr_base, less, less_equal, equal_to, etc. Example of usage:
-	\code
-		std::set<bstr_t, bstr_t::less<cf_ignore_case> > mySet;
-	\endcode
-	(Sofus Mortensen)
+    \code
+        std::set<bstr_t, bstr_t::less<cf_ignore_case> > mySet;
+    \endcode
+    (Sofus Mortensen)
 \li Fixed bugs in assignment operators for datetime_t. (Sofus Mortensen, Mikael Lindgren)
 \li In ptr.h changed COMET_ALLOW_DECLSPEC_PROPERTY to COMET_USE_RAW_WRAPPERS. (Michael Geddes)
 \li In common.h added workaround for VARIANT_TRUE resulting in a level 4 warning. (Michael Geddes)
-\li Changed server.h, so that a compiler error will occur if there are unimplemented coclasses. In case you deliberately want 
+\li Changed server.h, so that a compiler error will occur if there are unimplemented coclasses. In case you deliberately want
     unimplemented coclass define COMET_ALLOW_UNIMPLEMENTED_COCLASSES in std.h. (Sofus Mortensen)
 \li Added various helper functions to util.h. (Sofus Mortensen)
 \li Added support for aggregating the free threaded marshaler. Example:
-	\code
-    template<> coclass_implementation<Foo> : public coclass<Foo, thread_model::Both, FTM> 
-	\endcode
-	(Sofus Mortensen)
+    \code
+    template<> coclass_implementation<Foo> : public coclass<Foo, thread_model::Both, FTM>
+    \endcode
+    (Sofus Mortensen)
 \li Various bug fixes and changes. (Sofus Mortensen)
 
 \par Version 1 beta 9 (2001-9-23)
@@ -442,13 +442,13 @@ unwrapping the type of aliases without unwrapping the name of the aliases (Micha
 
 \par Version 1 beta 7 (2001-9-7)
 
-\li Added support for locking to safearray_t. (Michael Geddes) 
+\li Added support for locking to safearray_t. (Michael Geddes)
 \li Improved support in tlb2h for methods taking arrays as argument. (Sofus Mortensen)
 \li Fixed bug in tlb2h regarding methods that were the parameters were wrongly given a default value. (Sofus Mortensen)
 \li Fixed bug in tlb2h regarding type "void *". (Sofus Mortensen)
 \li Fixed various bugs in datetime.h. (Michael Geddes)
 \li Added COMET_ASSERT - a replacement for _ASSERTE. (Sofus Mortensen)
-  
+
 \par Version 1 beta 6 take 2 (2001-8-20)
 
 \li Fixed dumb, dumb _ASSERTE bug in tlb2h (Sofus Mortensen).
@@ -498,258 +498,258 @@ unwrapping the type of aliases without unwrapping the name of the aliases (Micha
 
 \par Version 1 beta 1 (2001-6-29)
 
-\li Added currency support to variant_t (Michael Geddes). 
-\li Documentation update for server.h (Michael Geddes). 
-\li Various bug fixes to do with agg-objects (Michael Geddes). 
+\li Added currency support to variant_t (Michael Geddes).
+\li Documentation update for server.h (Michael Geddes).
+\li Various bug fixes to do with agg-objects (Michael Geddes).
 \li Added GetClassObject implementation to atl_module (Michael Geddes).
 
 
-\par Version 1 alpha 10 (2001-6-26): 
+\par Version 1 alpha 10 (2001-6-26):
 
-\li CURRENCY wrapper updated by Michael Geddes. 
-\li tlb2h has been updated by Michael Geddes (again!). This time with options to specify which namespace to put wrappers in, and an options to emit symbols only for faster compilation. 
+\li CURRENCY wrapper updated by Michael Geddes.
+\li tlb2h has been updated by Michael Geddes (again!). This time with options to specify which namespace to put wrappers in, and an options to emit symbols only for faster compilation.
 \li atl_module.h documentation updated by Michael Geddes.
 
-\par Version 1 alpha 9 (2001-6-21): 
+\par Version 1 alpha 9 (2001-6-21):
 
-\li CURRENCY wrapper added by Michael Geddes. 
-\li Nutshell wrappers didn't work in alpha 8. Now fixed. 
-\li tlb2h has been updated by Michael Geddes for better command line handling. It now supports multiple files including wildcards, and support for specifying an output directory. 
-\li Server implementation updated by Michael Geddes to support loading type libraries that has not yet been registered. 
+\li CURRENCY wrapper added by Michael Geddes.
+\li Nutshell wrappers didn't work in alpha 8. Now fixed.
+\li tlb2h has been updated by Michael Geddes for better command line handling. It now supports multiple files including wildcards, and support for specifying an output directory.
+\li Server implementation updated by Michael Geddes to support loading type libraries that has not yet been registered.
 \li try_cast no longer throws on null pointers, and comet::com_ptr::operator->() now throws on null pointers. (Michael Geddes)
 
-\par Version 1 alpha 8 (2001-6-10): 
+\par Version 1 alpha 8 (2001-6-10):
 
-\li Compatibility patches for GCC/MINGW submitted by Michael Geddes. 
-\li Updated com_error with methods for accessing wrapped HRESULT value and IErrorInfo (source, helpfile, etc). 
+\li Compatibility patches for GCC/MINGW submitted by Michael Geddes.
+\li Updated com_error with methods for accessing wrapped HRESULT value and IErrorInfo (source, helpfile, etc).
 \li Various minor bug fixes.
 
-\par Version 1 alpha 7 take 3 (2001-3-31): 
+\par Version 1 alpha 7 take 3 (2001-3-31):
 
-\li Added converters for CURRENCY to variant_t.. 
+\li Added converters for CURRENCY to variant_t..
 \li Updated functor.h.
 
-\par Version 1 alpha 7 take 2 (2001-3-28): 
+\par Version 1 alpha 7 take 2 (2001-3-28):
 
-\li Fixed bug concerning using com_cast and try_cast with raw interface pointers. 
-\li Fixed bug in bstr.h 
+\li Fixed bug concerning using com_cast and try_cast with raw interface pointers.
+\li Fixed bug in bstr.h
 \li Fixed dependency on comet/stl.h in comet/enum.h
 
 
-\par Version 1 alpha 7 take 1 (2001-3-26): 
+\par Version 1 alpha 7 take 1 (2001-3-26):
 
-\li Support for dispinterfaces has been added by Michael Geddes and Mikael Lindgren. 
-\li BCC compatibility patches contributed by Michael Geddes. 
+\li Support for dispinterfaces has been added by Michael Geddes and Mikael Lindgren.
+\li BCC compatibility patches contributed by Michael Geddes.
 \li Support for multiple connection points added by Michael Geddes.
-\li Added generalised functor library that works with MSVC (Not really COM related) 
-\li comet::make_list\<\> has changed behaviour. Instead of writing make_list\<IFoo, IBar\>, you have to write \link comet::make_list make_list\<IFoo,IBar\>::result \endlink. This has been done in order to shorten error messages relating typelists. 
-\li Added several helper classes to comet/typelist.h for manipulation of typelists. 
+\li Added generalised functor library that works with MSVC (Not really COM related)
+\li comet::make_list\<\> has changed behaviour. Instead of writing make_list\<IFoo, IBar\>, you have to write \link comet::make_list make_list\<IFoo,IBar\>::result \endlink. This has been done in order to shorten error messages relating typelists.
+\li Added several helper classes to comet/typelist.h for manipulation of typelists.
 \li Fixed various "ambiguous conversion" errors
 
 
-\par Version 1 alpha 6 (2001-3-7): 
+\par Version 1 alpha 6 (2001-3-7):
 
-\li Fixed disastrous bug in comet::com_ptr. 
-\li Re-organisation of header files. 
-\li Support for Intel C++ 5.0 added. 
-\li Fixed bug in regkey. 
+\li Fixed disastrous bug in comet::com_ptr.
+\li Re-organisation of header files.
+\li Support for Intel C++ 5.0 added.
+\li Fixed bug in regkey.
 \li Various bugs fixes.
 
 
-\par Version 1 alpha 5 take 2 (2001-1-26): 
+\par Version 1 alpha 5 take 2 (2001-1-26):
 
 \li Fixed bug in ptr.h
 
 
-\par Version 1 alpha 5 (2001-1-16): 
+\par Version 1 alpha 5 (2001-1-16):
 
 \li Support for implementing aggregateable components. (Michael Geddes)
-\li comet::com_ptr is no longer using common base class. 
+\li comet::com_ptr is no longer using common base class.
 \li Various bug fixes.
 
 
-\par Version 1 alpha 4.2 (2000-12-17): 
+\par Version 1 alpha 4.2 (2000-12-17):
 
 \li Fixed bug in critical_section.
 
 
-\par Version 1 alpha 4.1 (2000-12-14): 
+\par Version 1 alpha 4.1 (2000-12-14):
 
-\li Fixed bug in variant.h 
-\li Added support for DATE and CURRENCY to tlb2h. (We might need wrapper classes for those). 
+\li Fixed bug in variant.h
+\li Added support for DATE and CURRENCY to tlb2h. (We might need wrapper classes for those).
 \li Fixed missing inline in common.h.
 
 
-\par Version 1 alpha 4 (2000-12-12): 
+\par Version 1 alpha 4 (2000-12-12):
 
-\li Generated wrappers, interfaces, etc are now placed in namespace corresponding to typelibrary name by tlb2h. 
-\li Fixed bugs in variant.h 
-\li The generated wrappers are no longer using .get_raw() and .get_raw_ptr(). Instead the wrapper methods .in(), .in_ptr(), .inout() and .out() are being used. 
-\li Support for constants placed in type library modules. (See Joav Kohn's posting on ATL discuss). 
-\li Support for version numbering for ProgID's. (Thanks to Mikael Lindgren). 
+\li Generated wrappers, interfaces, etc are now placed in namespace corresponding to typelibrary name by tlb2h.
+\li Fixed bugs in variant.h
+\li The generated wrappers are no longer using .get_raw() and .get_raw_ptr(). Instead the wrapper methods .in(), .in_ptr(), .inout() and .out() are being used.
+\li Support for constants placed in type library modules. (See Joav Kohn's posting on ATL discuss).
+\li Support for version numbering for ProgID's. (Thanks to Mikael Lindgren).
 \li Updated the wizard.
 
 
-\par Version 1 alpha 3 (2000-11-29): 
+\par Version 1 alpha 3 (2000-11-29):
 
-\li Added sanity checking to safearray_t to capture type mismatches. 
-\li Added in() method to all wrapper classes for use when calling raw interfaces. 
-\li The generated header files are now using a normal include guard instead of #pragma once. 
+\li Added sanity checking to safearray_t to capture type mismatches.
+\li Added in() method to all wrapper classes for use when calling raw interfaces.
+\li The generated header files are now using a normal include guard instead of #pragma once.
 \li Various minor fixes.
 
 
-\par Version 1 alpha 2 (2000-11-20): 
+\par Version 1 alpha 2 (2000-11-20):
 
-\li Nutshell generation added to tlb2h.exe. 
-\li Added STL compatible SAFEARRAY wrapper called comet::safearray_t<T>. 
-\li Updated registry class. 
-\li New BSTR wrapper, comet::bstr<boolean> with optional reference counting. 
-\li comet::bstr_t is now a typedef of comet::bstr<false>. 
+\li Nutshell generation added to tlb2h.exe.
+\li Added STL compatible SAFEARRAY wrapper called comet::safearray_t<T>.
+\li Updated registry class.
+\li New BSTR wrapper, comet::bstr<boolean> with optional reference counting.
+\li comet::bstr_t is now a typedef of comet::bstr<false>.
 \li ATL support added.
 
 
-\par Version 1 alpha 1 (2000-10-29): 
+\par Version 1 alpha 1 (2000-10-29):
 
 \li First alpha release of Comet.
 
 
-\par Version 0.9.7 (2000-10-19): 
+\par Version 0.9.7 (2000-10-19):
 
-\li typedef bug fix in tlb2h.exe 
+\li typedef bug fix in tlb2h.exe
 \li Bug fixes in comet::variant_t
 
 
-\par Version 0.9.6 (2000-10-19): 
+\par Version 0.9.6 (2000-10-19):
 
-\li Documentation updates. 
-\li Misc. bug fixes. 
+\li Documentation updates.
+\li Misc. bug fixes.
 
 
-\par Version 0.9.5 (2000-10-5): 
+\par Version 0.9.5 (2000-10-5):
 
-\li Documentation updates. 
-\li Paul Hollingsworth has been busy minimising include dependencies in the header files. 
+\li Documentation updates.
+\li Paul Hollingsworth has been busy minimising include dependencies in the header files.
 \li Added [out] and [in, out] adapters for dealing with raw interfaces.
 
 
-\par Version 0.9.4 (2000-10-4): 
+\par Version 0.9.4 (2000-10-4):
 
-\li Fixed more bugs in comet::com_ptr. 
+\li Fixed more bugs in comet::com_ptr.
 \li Added documentation on comet::com_ptr.
 
 
-\par Version 0.9.3 (2000-9-26): 
+\par Version 0.9.3 (2000-9-26):
 
 \li Fixed various bugs in comet::com_ptr.
 
 
-\par Version 0.9.2 (2000-9-25): 
+\par Version 0.9.2 (2000-9-25):
 
-\li Updated tlb2h to use const where appropiate. 
-\li Added support for unions. 
-\li Added support for one-dimensional arrays in structs. 
+\li Updated tlb2h to use const where appropiate.
+\li Added support for unions.
+\li Added support for one-dimensional arrays in structs.
 
 
-\par Version 0.9.1 (2000-9-21): 
+\par Version 0.9.1 (2000-9-21):
 
 \li Experimental support in tlb2h.exe for optional method arguments (ie. attribue optional or defaultvalue).
 
 
-\par Version 0.9.0 (2000-9-19): 
+\par Version 0.9.0 (2000-9-19):
 
-\li Paul Hollingsworth has contributed automatic implementation of IProvideClassInfo. 
-\li Better support for [in, out] parameters. 
-\li Fixed bugs in tlb2h's generation of connection point wrapper. 
-\li Removed progid from template parameters, instead override function get_progid(). 
-\li Added version metadata to coclass and typelibrary wrappers. 
+\li Paul Hollingsworth has contributed automatic implementation of IProvideClassInfo.
+\li Better support for [in, out] parameters.
+\li Fixed bugs in tlb2h's generation of connection point wrapper.
+\li Removed progid from template parameters, instead override function get_progid().
+\li Added version metadata to coclass and typelibrary wrappers.
 \li Fixed bug in variant_t::variant_t(const comet::bstr_t&).
 
 
-\par Version 0.8.3 (2000-9-12): 
+\par Version 0.8.3 (2000-9-12):
 
 \li Removed DLL dependency for tlb2h.exe.
 
 
-\par Version 0.8.2 (2000-9-7): 
+\par Version 0.8.2 (2000-9-7):
 
-\li com_error / raise_exception_t has been revised. 
-\li Fixed bug in com_ptr::operator=(int) 
-\li Rearranged header inclusion introducing error_fwd.h. 
-\li Added misc. utility classes not necessarily related to tlb2h to tlb2h/utility.h. 
+\li com_error / raise_exception_t has been revised.
+\li Fixed bug in com_ptr::operator=(int)
+\li Rearranged header inclusion introducing error_fwd.h.
+\li Added misc. utility classes not necessarily related to tlb2h to tlb2h/utility.h.
 \li Updated tlb2h.exe with more types.
 
 
-\par Version 0.8.1 (2000-9-3): 
+\par Version 0.8.1 (2000-9-3):
 
-\li Type conversions to/from bstr_t has been changed/tweaked. 
+\li Type conversions to/from bstr_t has been changed/tweaked.
 \li bstr_t now supports concatenation through operator+ and operator+=.
 
 
-\par Version 0.8.0 (2000-8-31): 
+\par Version 0.8.0 (2000-8-31):
 
-\li Fixed several bugs in tlb2h.exe. 
+\li Fixed several bugs in tlb2h.exe.
 \li Added misc. utility classes not necessarily related to tlb2h to tlb2h/utility.h.
 
 
-\par Version 0.7.10 (2000-8-25): 
+\par Version 0.7.10 (2000-8-25):
 
-\li Updated AppWizard to generate uuid for type library. 
-\li Added trait class to com_server for servers with no embedded type library. 
+\li Updated AppWizard to generate uuid for type library.
+\li Added trait class to com_server for servers with no embedded type library.
 
 
-\par Version 0.7.9 (2000-8-21): 
+\par Version 0.7.9 (2000-8-21):
 
-\li bstr_t is now capable of converting to std::string as well. 
+\li bstr_t is now capable of converting to std::string as well.
 \li Rearranged util.h into list.h, common.h and util.h.
 
 
-\par Version 0.7.8 (2000-8-18): 
+\par Version 0.7.8 (2000-8-18):
 
-\li Added simple AppWizard for creating DLL projects. 
-\li Removed untie. Instead embedded_object now has a release_from_owner method. 
+\li Added simple AppWizard for creating DLL projects.
+\li Removed untie. Instead embedded_object now has a release_from_owner method.
 \li structs defined in type libraries now automatically use CoTaskMem when using new/delete.
 
 
-\par Version 0.7.7 (2000-8-15): 
+\par Version 0.7.7 (2000-8-15):
 
 \li Changes to lifetime of embedded_object. Introducing tlb2h::untie, breaks tie between owner and embedded_object, so that the embedded_object can be destroyed before the owner.
 
 
-\par Version 0.7.6 (2000-8-15): 
+\par Version 0.7.6 (2000-8-15):
 
 \li Various changes to comet::bstr_t.
 
 
-\par Version 0.7.5 (2000-8-13): 
+\par Version 0.7.5 (2000-8-13):
 
-\li Interface inheritance problems solved. 
-\li Problem with [in] VARIANT arguments solved. 
-\li create_enum now works with embedded_objects. 
-\li comet::make_list now handles up to 40 elements. 
-\li Problem with IUnknown interfaces in coclasses solved. 
+\li Interface inheritance problems solved.
+\li Problem with [in] VARIANT arguments solved.
+\li create_enum now works with embedded_objects.
+\li comet::make_list now handles up to 40 elements.
+\li Problem with IUnknown interfaces in coclasses solved.
 \li Workaround for bug in Visual Studio editor causing VS to crash when editing certain template code.
 
 
-\par Version 0.7.4 (2000-8-8): 
+\par Version 0.7.4 (2000-8-8):
 
-\li Conversion from comet::com_ptr to comet::variant_t improved. 
+\li Conversion from comet::com_ptr to comet::variant_t improved.
 \li Updated example to demonstrate now working COM enumeration implementation on STL containers.
 
 
-\par Version 0.7.3 (2000-8-8): 
+\par Version 0.7.3 (2000-8-8):
 
-\li Nasty connection point bug fixed. 
-\li Added trivial VB client example program demonstrating connection point. 
-\li Added com_cast and try_cast for casting interface pointers. Implicit casting no longer allowed. 
-\li comet::com_error::what() is now working. 
-\li Misc. minor bug fixes/tweaks. 
+\li Nasty connection point bug fixed.
+\li Added trivial VB client example program demonstrating connection point.
+\li Added com_cast and try_cast for casting interface pointers. Implicit casting no longer allowed.
+\li comet::com_error::what() is now working.
+\li Misc. minor bug fixes/tweaks.
 
 
-\par Version 0.7.2 (2000-8-3): 
+\par Version 0.7.2 (2000-8-3):
 
-\li Updated the example with registration custom build. 
-\li Misc. bug fixes. 
- 
+\li Updated the example with registration custom build.
+\li Misc. bug fixes.
+
 */
 //! Primary namespace for comet. Includes source and libraries.
 namespace comet {

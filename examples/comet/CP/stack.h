@@ -4,130 +4,130 @@
 
 class CStack : public coclass< CometExampleCP::Stack, thread_model::Both, FTM >
 {
-	std::stack<variant_t> stack_;
-	critical_section cs_;
+    std::stack<variant_t> stack_;
+    critical_section cs_;
 
 public:
-	CStack()
-	{
-	}
+    CStack()
+    {
+    }
 
-	~CStack()
-	{
-		OutputDebugString(_T("***destruction***"));
-	}
-	
-	long GetSize() 
-	{ 
-		return stack_.size(); 
-	}
+    ~CStack()
+    {
+        OutputDebugString(_T("***destruction***"));
+    }
 
-	void Push(const variant_t& v) 
-	{ 
-		{	
-			auto_cs lock(cs_);
-			stack_.push(v); 
-		}
+    long GetSize()
+    {
+        return stack_.size();
+    }
 
-		Ees e = E_1;
-		connection_point.Fire_OnChanged(e);
-	}
+    void Push(const variant_t& v)
+    {
+        {
+            auto_cs lock(cs_);
+            stack_.push(v);
+        }
 
-	variant_t Pop()
-	{	
-		variant_t rv;
+        Ees e = E_1;
+        connection_point.Fire_OnChanged(e);
+    }
 
-		{
-			auto_cs lock(cs_);
-			rv = stack_.top();
-			stack_.pop();
-		}
+    variant_t Pop()
+    {
+        variant_t rv;
 
-		Ees e = E_2;
-		connection_point.Fire_OnChanged(e);
+        {
+            auto_cs lock(cs_);
+            rv = stack_.top();
+            stack_.pop();
+        }
 
-		return rv;
-	}
+        Ees e = E_2;
+        connection_point.Fire_OnChanged(e);
 
-	int GetClassSize() { return sizeof(*this) - sizeof(stack_) - sizeof(cs_) - sizeof(long); }
+        return rv;
+    }
 
-	void Test1(const TName& v, const uuid_t& w)
-	{
-	}
+    int GetClassSize() { return sizeof(*this) - sizeof(stack_) - sizeof(cs_) - sizeof(long); }
 
-	void Test2(const TName& v, const uuid_t& w)
-	{
-	}
+    void Test1(const TName& v, const uuid_t& w)
+    {
+    }
 
-	void Test3(TName& v, uuid_t& w)
-	{
-	}
+    void Test2(const TName& v, const uuid_t& w)
+    {
+    }
 
-	TName Test4a()
-	{
-		TName name;
-		name.family = L"Mortensen";
-		name.given = L"Sofus";
-		return name;
-	}
+    void Test3(TName& v, uuid_t& w)
+    {
+    }
 
-	uuid_t Test4b()
-	{
-		return uuid_t::create();
-	}
+    TName Test4a()
+    {
+        TName name;
+        name.family = L"Mortensen";
+        name.given = L"Sofus";
+        return name;
+    }
 
-	void Test5(TName& v, uuid_t& w)
-	{
-	}
+    uuid_t Test4b()
+    {
+        return uuid_t::create();
+    }
 
-	void Test6b(safearray_t<TName>& sa)
-	{
-	}
+    void Test5(TName& v, uuid_t& w)
+    {
+    }
 
-	void Test6a(safearray_t<bstr_t>& sa)
-	{
-		safearray_t<bstr_t> sa2;
-		sa.swap( sa2 );
-	}
+    void Test6b(safearray_t<TName>& sa)
+    {
+    }
 
-	void Test7a(const safearray_t<bstr_t>& sa)
-	{}
+    void Test6a(safearray_t<bstr_t>& sa)
+    {
+        safearray_t<bstr_t> sa2;
+        sa.swap( sa2 );
+    }
 
-	void Test7b(const safearray_t<TName>& sa)
-	{}
+    void Test7a(const safearray_t<bstr_t>& sa)
+    {}
 
-	bstr_t Test8a(const bstr_t&, bstr_t&, bstr_t&)
-	{
-		return "";
-	}
+    void Test7b(const safearray_t<TName>& sa)
+    {}
 
-	long Test8b(const long&, long&, long&)
-	{
-		return 0;
-	}
+    bstr_t Test8a(const bstr_t&, bstr_t&, bstr_t&)
+    {
+        return "";
+    }
 
-	Ees Test8c(const Ees&, Ees&, Ees&)
-	{
-		return E_1;
-	}
+    long Test8b(const long&, long&, long&)
+    {
+        return 0;
+    }
 
-	void Test9a(const currency_t&, const datetime_t&) {}
-	void Test9b(currency_t&, datetime_t&) {}
-	void Test9c(currency_t&, datetime_t&) {}
+    Ees Test8c(const Ees&, Ees&, Ees&)
+    {
+        return E_1;
+    }
 
-	void Test10(bstr_t&, com_ptr<IDispatch>&, com_ptr<IUnknown>&, IStackPtr&, variant_t&, long&, float&)
-	{}
+    void Test9a(const currency_t&, const datetime_t&) {}
+    void Test9b(currency_t&, datetime_t&) {}
+    void Test9c(currency_t&, datetime_t&) {}
 
-	void Test11(bool& b)
-	{
-		b = true;
-	}
+    void Test10(bstr_t&, com_ptr<IDispatch>&, com_ptr<IUnknown>&, IStackPtr&, variant_t&, long&, float&)
+    {}
 
-	void Test12(const datetime_t&)
-	{
-	}
+    void Test11(bool& b)
+    {
+        b = true;
+    }
 
-	static TCHAR* get_progid() { return _T("CometExampleCP.Stack"); }
+    void Test12(const datetime_t&)
+    {
+    }
+
+    static TCHAR* get_progid() { return _T("CometExampleCP.Stack"); }
 };
 
 template<> class coclass_implementation< CometExampleCP::Stack > : public CStack {};
@@ -136,28 +136,28 @@ template<> class coclass_implementation< CometExampleCP::Stack > : public CStack
 typedef coclass_implementation< CometExampleCP::Foo > TFoo;
 
 template<>
-class coclass_implementation< CometExampleCP::Foo > : public coclass< CometExampleCP::Foo >, 
-													  public sink_impl< DStackEventsImpl<TFoo > >
+class coclass_implementation< CometExampleCP::Foo > : public coclass< CometExampleCP::Foo >,
+                                                      public sink_impl< DStackEventsImpl<TFoo > >
 {
 public:
-	void Test() 
-	{
-	}
+    void Test()
+    {
+    }
 
-	void OnChanged(Ees& e)
-	{
-		
-	}
+    void OnChanged(Ees& e)
+    {
 
-	coclass_implementation()
-	{
-		OutputDebugString(_T("Foo\n"));
-	}
+    }
 
-	~coclass_implementation() 
-	{
-		OutputDebugString(_T("~Foo\n"));
-	}
+    coclass_implementation()
+    {
+        OutputDebugString(_T("Foo\n"));
+    }
+
+    ~coclass_implementation()
+    {
+        OutputDebugString(_T("~Foo\n"));
+    }
 
 };
 
@@ -165,16 +165,16 @@ template<>
 class coclass_implementation< CometExampleCP::Bar > : public coclass< CometExampleCP::Bar, thread_model::Both, aggregates<Foo> >
 {
 public:
-	coclass_implementation()
-	{
-		create_aggregate(this);
-	}
+    coclass_implementation()
+    {
+        create_aggregate(this);
+    }
 
-	~coclass_implementation() 
-	{
-		OutputDebugString(_T("~Bar\n"));
-	}
+    ~coclass_implementation()
+    {
+        OutputDebugString(_T("~Bar\n"));
+    }
 
-	void Test2() 
-	{}
+    void Test2()
+    {}
 };

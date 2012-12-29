@@ -1,6 +1,6 @@
 #include "std.h"
 #include "stack.h"
-             
+
 using namespace comet;
 
 typedef com_server< CometExampleCP::type_library > SERVER;
