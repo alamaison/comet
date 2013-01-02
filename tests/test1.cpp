@@ -1086,70 +1086,97 @@ vector< com_ptr<IUnknown> > test_collection()
     return collection;
 }
 
+template<typename Itf, size_t arraysize>
+void release_pointer_array(Itf* (&pointers)[arraysize])
+{
+    for (int i=0; i < arraysize; ++i)
+        if (pointers[i])
+            pointers[i]->Release();
+}
+
 void enum_test(com_ptr<IEnumUnknown> e)
 {
-    IUnknown* punks[3];
+    IUnknown* punks[3] = { NULL, NULL, NULL };
 
-    // Test validity
-    for (int i = 0; i < 3; ++i)
+    try
     {
-        IUnknown* punk;
-        ULONG count = 12;
-        HRESULT hr = e->Next(1, &punk, &count);
-        if (hr != S_OK)
-            throw runtime_error("HRESULT is not S_OK");
+        // Test validity
+        for (int i = 0; i < 3; ++i)
+        {
+            IUnknown* punk;
+            ULONG count = 12;
+            HRESULT hr = e->Next(1, &punk, &count);
+            if (hr != S_OK)
+                throw runtime_error("HRESULT is not S_OK");
 
-        if (count != 1)
-            throw runtime_error("Incorrect return count");
+            if (count != 1)
+                throw runtime_error("Incorrect return count");
 
-        if (punk == NULL)
-            throw runtime_error("NULL returned instead of object");
-        punk->AddRef();
-        punk->Release();
+            if (punk == NULL)
+                throw runtime_error("NULL returned instead of object");
 
-        punks[i] = punk; // store for uniqueness test later
+            punks[i] = punk; // store for uniqueness test later
+        }
+
+        empty_enum_test(e);
+
+        // Test uniqueness
+        if (punks[0] == punks[1])
+            throw runtime_error("Same object returned twice");
+        if (punks[0] == punks[2])
+            throw runtime_error("Same object returned twice");
+        if (punks[2] == punks[1])
+            throw runtime_error("Same object returned twice");
+
+        release_pointer_array(punks);
     }
-
-    empty_enum_test(e);
-
-    // Test uniqueness
-    if (punks[0] == punks[1])
-       throw runtime_error("Same object returned twice");
-    if (punks[0] == punks[2])
-       throw runtime_error("Same object returned twice");
-    if (punks[2] == punks[1])
-       throw runtime_error("Same object returned twice");
+    catch(const exception&)
+    {
+        release_pointer_array(punks);
+        throw;
+    }
 }
 
 void enum_chunk_test(com_ptr<IEnumUnknown> e)
 {
-    IUnknown* punk[4];
-    ULONG count = 12;
-    HRESULT hr = e->Next(4, punk, &count); // request more than expected
-    if (hr != S_FALSE)
-        throw runtime_error("HRESULT is not S_FALSE");
+    IUnknown* punks[4] = { NULL, NULL, NULL, NULL };
 
-    if (count != 3)
-        throw runtime_error("Incorrect return count");
-
-    // Test validity
-    for (int i = 0; i < 3; ++i)
+    try
     {
-        if (punk[i] == NULL)
-            throw runtime_error("NULL returned instead of object");
-        punk[i]->AddRef();
-        punk[i]->Release();
+        ULONG count = 12;
+        HRESULT hr = e->Next(4, punks, &count); // request more than expected
+        if (hr != S_FALSE)
+            throw runtime_error("HRESULT is not S_FALSE");
+
+        if (count != 3)
+            throw runtime_error("Incorrect return count");
+
+        // Test validity
+        for (int i = 0; i < 3; ++i)
+        {
+            if (punks[i] == NULL)
+                throw runtime_error("NULL returned instead of object");
+            punks[i]->AddRef();
+            punks[i]->Release();
+        }
+
+        empty_enum_test(e);
+
+        // Test uniqueness
+        if (punks[0] == punks[1])
+            throw runtime_error("Same object returned twice");
+        if (punks[0] == punks[2])
+            throw runtime_error("Same object returned twice");
+        if (punks[2] == punks[1])
+            throw runtime_error("Same object returned twice");
+
+        release_pointer_array(punks);
     }
-
-    empty_enum_test(e);
-
-    // Test uniqueness
-    if (punk[0] == punk[1])
-       throw runtime_error("Same object returned twice");
-    if (punk[0] == punk[2])
-       throw runtime_error("Same object returned twice");
-    if (punk[2] == punk[1])
-       throw runtime_error("Same object returned twice");
+    catch(const exception&)
+    {
+        release_pointer_array(punks);
+        throw;
+    }
 }
 
 /**
@@ -1161,9 +1188,11 @@ BOOST_AUTO_TEST_CASE( stl_enumeration_t_non_empty )
     collection_type coll = test_collection();
     com_ptr<IEnumUnknown> e = new stl_enumeration_t<
         IEnumUnknown, collection_type, IUnknown*>(coll);
+    
     enum_test(e);
+    /*
     e->Reset();
-    enum_chunk_test(e);
+    enum_chunk_test(e);*/
 }
 
 
