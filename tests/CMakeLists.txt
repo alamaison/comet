@@ -28,7 +28,17 @@ project(comet-unit-tests)
 
 set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/module.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test1.cpp)
+  ${CMAKE_CURRENT_SOURCE_DIR}/bstr.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/currency.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/datetime.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/enum.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ptr.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/registry.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/safearray.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/threading.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/typelist.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/uuid.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/variant.cpp)
 
 add_executable(unit-tests ${SOURCES})
 
