@@ -15,30 +15,50 @@
 
 cmake_minimum_required(VERSION 2.4)
 
-project(comet-tests)
+set(Boost_USE_STATIC_LIBS TRUE)
+set(Boost_DETAILED_FAILURE_MSG TRUE)
+find_package(
+  Boost 1.40 REQUIRED COMPONENTS  unit_test_framework)
+link_directories(${Boost_LIBRARY_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
 
 include_directories(../include)
 
+project(comet-unit-tests)
+
 set(SOURCES
-  test1
-  test2
-  test3
-  test4
-  test5
-  test6
-  test7
-  test8
-  test9
-  test10
-  test11
-  test12
-  test13
-  test14
-  test15
-  test16
-  test17
-  test18)
+  ${CMAKE_CURRENT_SOURCE_DIR}/module.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test1.cpp)
 
-add_executable(tests ${SOURCES})
+add_executable(unit-tests ${SOURCES})
 
-add_test(test_runner tests)
+add_custom_target(RUN_TESTS ALL
+  $<TARGET_FILE:unit-tests>
+  --catch_system_errors
+  --detect_memory_leaks
+  --result_code=no)
+
+
+project(comet-include-tests)
+
+set(SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test2.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test3.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test4.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test5.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test6.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test7.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test8.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test9.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test10.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test11.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test12.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test13.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test14.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test15.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test16.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test17.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/test18.cpp)
+
+add_executable(include-tests ${SOURCES})
