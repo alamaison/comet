@@ -36,6 +36,7 @@ set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/registry.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/safearray.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/threading.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/tlbinfo.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/typelist.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/uuid.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/variant.cpp)
@@ -48,27 +49,21 @@ add_custom_target(RUN_TESTS ALL
   --detect_memory_leaks
   --result_code=no)
 
-
+# Generate tests that library headers are self-containes
 project(comet-include-tests)
 
-set(SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test2.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test3.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test4.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test5.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test6.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test7.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test8.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test9.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test10.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test11.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test12.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test13.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test14.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test15.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test16.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test17.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/test18.cpp)
+foreach(header_file ${LIBRARY_HEADERS})
 
-add_executable(include-tests ${SOURCES})
+  # Extract the header file name and convert it to a build file name
+  get_filename_component(filename ${header_file} NAME_WE)
+  set(BUILD_FILE ${CMAKE_CURRENT_BINARY_DIR}/${filename}.cpp)
+
+  add_custom_command(
+    OUTPUT ${BUILD_FILE} VERBATIM
+    COMMAND cmake -E echo \#include <${header_file}> > ${BUILD_FILE})
+
+  list(APPEND INCLUDE_TEST_SOURCES ${BUILD_FILE})
+
+endforeach()
+
+add_executable(include-tests main.cpp ${INCLUDE_TEST_SOURCES})
