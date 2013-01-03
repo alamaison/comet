@@ -1038,7 +1038,9 @@ class datetime_t : private impl::datetime_base<DATE>
           *  date. It is also possible to specify if the "as of" date is in UTC or not.
           *  If missing, it defaults to false.
           */
-        datetime_t local_to_utc( tz_bias_mode biasMode = tbm_use_local_date, datetime_t asOfDate = datetime_t() )
+        datetime_t local_to_utc(
+            tz_bias_mode biasMode = tbm_use_local_date,
+            datetime_t asOfDate = datetime_t()) const
         {
             if (asOfDate.invalid())
                 switch( biasMode)
@@ -1060,7 +1062,9 @@ class datetime_t : private impl::datetime_base<DATE>
          * specified, it defaults to TRUE (since the "as of" date IS UTC), otherwise
          * it defaults to false.
          */
-        datetime_t utc_to_local( tz_bias_mode biasMode = tbm_use_local_date,datetime_t asOfDate = datetime_t() )
+        datetime_t utc_to_local(
+            tz_bias_mode biasMode = tbm_use_local_date,
+            datetime_t asOfDate = datetime_t()) const
         {
             if ( asOfDate.invalid())
                 switch( biasMode)
@@ -1226,7 +1230,10 @@ class datetime_t : private impl::datetime_base<DATE>
          * \param conversionTime Override the date to use for calculating
          * daylight/standard time.
          */
-        bool to_unixtime( time_t *val, utc_convert_mode utcMode = ucm_local_to_utc, tz_bias_mode biasMode = tbm_use_local_date, const datetime_t &conversionTime = datetime_t())
+        bool to_unixtime(
+            time_t *val, utc_convert_mode utcMode = ucm_local_to_utc,
+            tz_bias_mode biasMode = tbm_use_local_date,
+            const datetime_t &conversionTime = datetime_t()) const
         {
             datetime_t dtval;
             switch( utcMode)
