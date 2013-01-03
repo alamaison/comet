@@ -3,6 +3,7 @@
   */
 
 /* Copyright © 2002 Michael Geddes
+ * Copyright © 2013 Alexander Lamaison
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -24,6 +25,9 @@
 #endif
 
 #include <comet/config.h>
+#include <comet/error_fwd.h> // raise_exception
+
+#include <Windows.h> // HRESULT
 
 namespace comet
 {

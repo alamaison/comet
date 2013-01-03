@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2001, 2002 Sofus Mortensen
+ * Copyright © 2013 Alexander Lamaison
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -19,12 +20,14 @@
 #ifndef COMET_UUID_FWD_H
 #define COMET_UUID_FWD_H
 
+#include <comet/config.h>
+#include <comet/tstring.h>
+
 #include <rpc.h>
 #include <string>
 #include <algorithm>
 #include <iostream>
 #include <ostream>
-#include <comet/tstring.h>
 
 namespace comet{
 

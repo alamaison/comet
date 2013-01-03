@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2000, 2001 Paul Hollingsworth, Michael Geddes
+ * Copyright © 2013 Alexander Lamaison
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -20,6 +21,8 @@
 #define COMET_ATL_MODULE_H
 
 #include <comet/server.h>
+
+#include <atlbase.h>
 
 namespace comet {
     /*! \defgroup ATL ATL conversion.

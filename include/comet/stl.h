@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2001 Sofus Mortensen
+ * Copyright © 2013 Alexander Lamaison
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -20,6 +21,8 @@
 #define COMET_STL_H
 
 #include <comet/config.h>
+
+#include <functional>
 
 // add identity, select1st, and select2nd.
 #if !defined(__SGI_STL_PORT) && !defined(__MINGW32__)
