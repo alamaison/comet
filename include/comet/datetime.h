@@ -1196,16 +1196,6 @@ class datetime_t : private impl::datetime_base<DATE>
         }
 
         /** Convert from a \e time_t value.
-         */
-        bool from_unixtime( time_t val)
-        {
-            FILETIME ft;
-            __int64 ll =(__int64(val) * 10000000L) + 116444736000000000L;
-            ft.dwLowDateTime = (DWORD) ll;
-            ft.dwHighDateTime = (DWORD)(ll >>32);
-            return from_filetime(ft);
-        }
-        /** Convert from a \e time_t value.
          * \param val Value to convert.
          * \param utcMode Timezone conversion mode.
          * \param biasMode Specify how to calculate whether the local time is
