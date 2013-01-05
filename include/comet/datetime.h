@@ -1034,33 +1034,47 @@ public:
 
 public:
 
-    /**  Convert a local time to UTC.
-      *  Takes a local time (like that inside a ZIP file, or on a FAT file system)
-      *  and converts it to UTC, using the timezone rules in effect as of the date
-      *  specified.  Typically the "as of" date is specified as the modification or
-      *  creation date of the ZIP file, or left missing to default to the given local
-      *  date. It is also possible to specify if the "as of" date is in UTC or not.
-      *  If missing, it defaults to false.
-      */
+    /**
+     * Convert a local time to UTC.
+     * 
+     * Takes a local time (like that inside a ZIP file, or on a FAT file
+     * system) and converts it to UTC, using the timezone rules in effect as
+     * of the date specified.  Typically the "as of" date is specified as the
+     * modification or creation date of the ZIP file, or left missing to
+     * default to the given local date. It is also possible to specify if the
+     * "as of" date is in UTC or not.  If missing, it defaults to false.
+     */
     datetime_t local_to_utc(
         tz_bias_mode biasMode = tbm_use_local_date,
         datetime_t asOfDate = datetime_t()) const
     {
+        // if they didn't specify if the AS OF date is UTC, use the current date
         if (asOfDate.invalid())
-            switch( biasMode)
+        {
+            switch(biasMode)
             {
-                case tbm_use_utc_date:      biasMode = tbm_use_local_date; // no break
-                case tbm_use_local_date:    asOfDate = *this;
+                case tbm_use_utc_date:
+                    biasMode = tbm_use_local_date; // no break
+                case tbm_use_local_date:
+                    asOfDate = *this;
             }
-        //  if they didn't specify if the AS OF date is UTC, use the current date
-        return datetime_t(to_date(to_double(dt_)+local_timezone_bias(asOfDate,biasMode))/(24.*60.));
+        }
+
+        double timezone_bias =
+            local_timezone_bias(asOfDate, biasMode) / (24.*60.);
+        double local_date_continuous = to_double(dt_);
+        DATE utc_date = to_date(local_date_continuous + timezone_bias);
+
+        return datetime_t(utc_date);
     }
 
-    /** Convert a UTC time to a local time.
-     * Takes a UTC time (like that on and NTFS file system) and converts it to local
-     * time, using the timezone rules in effect as of the date specified.
-     * Typically the "as of" date is specified as the current time or possibly the
-     * modification or creation date of an enclosing ZIP file, or left missing to
+    /**
+     * Convert a UTC time to a local time.
+     *
+     * Takes a UTC time (like that on an NTFS file system) and converts it to
+     * local time, using the timezone rules in effect as of the date specified.
+     * Typically the "as of" date is specified as the current time or possibly
+     * the modification or creation date of an enclosing ZIP file, or omitted to
      * default to the given UTC date. It is also possible to specify if the "as
      * of" date is in UTC or not.  If missing, if the "as of" date is not
      * specified, it defaults to TRUE (since the "as of" date IS UTC), otherwise
@@ -1070,13 +1084,24 @@ public:
         tz_bias_mode biasMode = tbm_use_local_date,
         datetime_t asOfDate = datetime_t()) const
     {
-        if ( asOfDate.invalid())
-            switch( biasMode)
+        // if they didn't specify if the AS OF date is UTC, use the current date
+        if (asOfDate.invalid())
+        {
+            switch(biasMode)
             {
-                case tbm_use_local_date: biasMode = tbm_use_utc_date; // no break!
-                case tbm_use_utc_date:   asOfDate = *this;
+                case tbm_use_local_date:
+                    biasMode = tbm_use_utc_date; // no break!
+                case tbm_use_utc_date:
+                    asOfDate = *this;
             }
-        return datetime_t(to_date(to_double(dt_)-local_timezone_bias(asOfDate,biasMode))/(24.*60.));
+        }
+
+        double timezone_bias =
+            local_timezone_bias(asOfDate, biasMode) / (24.*60.);
+        double utc_date_continuous = to_double(dt_);
+        DATE local_date = to_date(utc_date_continuous - timezone_bias);
+
+        return datetime_t(local_date);
     }
 
     /** Convert to SYSTEMTIME struct.
@@ -1246,12 +1271,16 @@ public:
         return true;
     }
 
-    /** Calculates the local time Bias (to subtract from UTC), using the timezone
-      * rules for this date.  This "as of" date may be the
-      * current time or possibly the modification or creation date of an enclosing
-      * ZIP file.  It must be specified if this "as of" date is in UTC or not.
-      */
-    static long local_timezone_bias( datetime_t dt, tz_bias_mode biasMode)
+    /**
+     * Calculates the local timezone's bias from UTC on the given date, in
+     * minutes.
+     *
+     * This bias is the number of minutes to subtract from a UTC date to make
+     * a local one.  This "as of" date may be the current time or possibly the
+     * modification or creation date of an enclosing ZIP file.  It must be
+     * specified if this "as of" date is in UTC or not.
+     */
+    static long local_timezone_bias(datetime_t dt, tz_bias_mode biasMode)
     {
         TIME_ZONE_INFORMATION tzi;
         ::GetTimeZoneInformation(&tzi);
@@ -1265,7 +1294,9 @@ public:
             case tbm_use_local_date: break;
             case tbm_use_utc_date:   isUTC = true; break;
         }
-        // if we've even got both time zones set, we have to choose which is active...
+
+        // if we've even got both time zones set, we have to choose which is
+        // active...
         if ((tzi.DaylightDate.wMonth != 0) && (tzi.StandardDate.wMonth != 0) )
         {
             // all local standard time/daylight savings time rules are based on
@@ -1277,14 +1308,18 @@ public:
             if (!dt.to_systemtime(&sysTime))
                 throw datetime_exception("Invalid Date");
 
-            bool DSTbeforeLST =  tzi.DaylightDate.wMonth < tzi.StandardDate.wMonth;
+            bool DSTbeforeLST =
+                tzi.DaylightDate.wMonth < tzi.StandardDate.wMonth;
 
-            bool afterDaylightStarts =  tz_on_or_after_in_year(sysTime, tzi.DaylightDate);
-            bool afterStandardStarts =  tz_on_or_after_in_year(sysTime, tzi.StandardDate);
+            bool afterDaylightStarts =
+                tz_on_or_after_in_year(sysTime, tzi.DaylightDate);
+            bool afterStandardStarts =
+                tz_on_or_after_in_year(sysTime, tzi.StandardDate);
 
-            if( ((afterDaylightStarts== afterStandardStarts)!= DSTbeforeLST) )
+            if (((afterDaylightStarts== afterStandardStarts)!= DSTbeforeLST))
                 return baseBias + tzi.DaylightBias;
         }
+
         return baseBias + tzi.StandardBias;
     }
 
