@@ -1276,33 +1276,38 @@ public:
      * minutes.
      *
      * This bias is the number of minutes to subtract from a UTC date to make
-     * a local one.  This "as of" date may be the current time or possibly the
-     * modification or creation date of an enclosing ZIP file.  It must be
-     * specified if this "as of" date is in UTC or not.
+     * a local one.  It must be specified if this "as of" date is in UTC or not.
      */
     static long local_timezone_bias(datetime_t dt, tz_bias_mode biasMode)
     {
         TIME_ZONE_INFORMATION tzi;
         ::GetTimeZoneInformation(&tzi);
 
-        long baseBias= tzi.Bias;
+        long baseBias = tzi.Bias;
         bool isUTC = false;
-        switch ( biasMode )
+        switch (biasMode)
         {
-            case tbm_force_standard: return baseBias + tzi.StandardBias;
-            case tbm_force_summer:   return baseBias + tzi.DaylightBias;
-            case tbm_use_local_date: break;
-            case tbm_use_utc_date:   isUTC = true; break;
+            case tbm_force_standard:
+                return baseBias + tzi.StandardBias;
+            case tbm_force_summer:
+                return baseBias + tzi.DaylightBias;
+            case tbm_use_local_date:
+                break;
+            case tbm_use_utc_date:
+                isUTC = true;
+                break;
+            default:
+                COMET_ASSERT(!"Invalid timezone bias mode");
         }
 
         // if we've even got both time zones set, we have to choose which is
         // active...
-        if ((tzi.DaylightDate.wMonth != 0) && (tzi.StandardDate.wMonth != 0) )
+        if ((tzi.DaylightDate.wMonth != 0) && (tzi.StandardDate.wMonth != 0))
         {
             // all local standard time/daylight savings time rules are based on
             // local-time, so add the base bias FIRST
             if (isUTC)
-                dt -= (baseBias/(24.*60.));
+                dt -= (baseBias / (24.*60.));
 
             SYSTEMTIME sysTime;
             if (!dt.to_systemtime(&sysTime))
