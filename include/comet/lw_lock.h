@@ -110,7 +110,7 @@ namespace comet {
         ///  Reader lock acquisition
         void enter_reader() const
         {
-            while( 1 )
+            for (;;)
             {
                 //  If there's a writer already, spin without unnecessarily
                 //  interlocking the CPUs
