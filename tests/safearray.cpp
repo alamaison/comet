@@ -240,13 +240,13 @@ BOOST_AUTO_TEST_SUITE_END()
 template<typename T>
 struct check_array
 {
-    static void check() { T *a = &safearray_t<T>()[0]; }
+    static void check() { T *a = &safearray_t<T>()[0]; (void*)a; }
 };
 
 template<typename T, typename S>
 struct check_array_special
 {
-    static void check() { T *a = &safearray_t<S>()[0]; }
+    static void check() { T *a = &safearray_t<S>()[0]; (void*)a; }
 };
 
 void check_safearray_traits()

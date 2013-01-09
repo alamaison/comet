@@ -61,6 +61,7 @@ BOOST_AUTO_TEST_CASE( converted_length )
     std::string s = bs.s_str();
     size_t l2 = s.length();
 
+    BOOST_CHECK_EQUAL(l, l1);
     BOOST_CHECK_EQUAL(l1, l2);
     BOOST_CHECK_EQUAL(s, t);
 }
@@ -145,6 +146,7 @@ BOOST_AUTO_TEST_CASE( from_variant_reference )
     }
 
     HRESULT hr = VariantClear(&raw_v);
+    BOOST_CHECK_MESSAGE(hr == S_OK, "Variant failed to clear properly");
 }
 
 BOOST_AUTO_TEST_CASE( sort )
@@ -195,8 +197,6 @@ BOOST_AUTO_TEST_CASE( conversion2 )
     bstr_t s = "foo";
     if (s.length() != 3)
         throw std::exception("conversion from MBCS to wide char is broken");
-
-    size_t l = s.length();
 
     std::string s1 = s;
     if (s1.length() != 3)

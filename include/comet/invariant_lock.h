@@ -41,7 +41,7 @@ namespace comet {
         {
         protected:
             invariant_lock() {}
-            invariant_lock(const invariant_lock &rhs) {}
+            invariant_lock(const invariant_lock& /*rhs*/) {}
         };
 
         /** A version of invariant_lock able to call any void member of a class.
