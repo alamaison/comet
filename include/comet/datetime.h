@@ -628,7 +628,7 @@ public:
      */
     explicit datetime_t(
         const SYSTEMTIME& source, utc_convert_mode utc_mode,
-        const datetime_t& conversion_time=datetime_t(),
+        const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
         if (!from_systemtime(source, utc_mode, conversion_time, utc_or_local))
@@ -673,7 +673,7 @@ public:
      */
     explicit datetime_t(
         const FILETIME& source, utc_convert_mode utc_mode=ucm_none,
-        const datetime_t& conversion_time=datetime_t(),
+        const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
         if (!from_filetime(source, utc_mode, conversion_time, utc_or_local))
@@ -722,7 +722,7 @@ public:
      */
     explicit datetime_t(
         time_t source, utc_convert_mode utc_mode=ucm_utc_to_local,
-        const datetime_t& conversion_time=datetime_t(),
+        const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
         if (!from_unixtime(source, utc_mode, conversion_time, utc_or_local))
@@ -1163,7 +1163,7 @@ public:
      *     Whether `as_of_date` is a local or UTC date.  Defaults to UTC.
      */
     datetime_t local_to_utc(
-        datetime_t as_of_date=datetime_t(),
+        datetime_t as_of_date=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local) const
     {
         // if they didn't specify an AS OF date, use the current date which
@@ -1227,7 +1227,7 @@ public:
      *     Whether `as_of_date` is a local or UTC date.  Defaults to UTC.
      */
     datetime_t utc_to_local(
-        datetime_t as_of_date=datetime_t(),
+        datetime_t as_of_date=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::utc) const
     {
         // if they didn't specify an AS OF date, use the current date which
@@ -1312,7 +1312,7 @@ public:
      */
     bool from_systemtime(
         const SYSTEMTIME& source, utc_convert_mode utc_mode,
-        const datetime_t& conversion_time=datetime_t(),
+        const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
         if (!from_systemtime(source))
@@ -1385,7 +1385,7 @@ public:
      */
     bool from_filetime(
         const FILETIME& source, utc_convert_mode utc_mode,
-        const datetime_t& conversion_time=datetime_t(),
+        const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
         if (!from_filetime(source))
@@ -1469,7 +1469,7 @@ public:
      */
     bool from_tm(
         const struct tm &tm_time, utc_convert_mode utc_mode,
-        datetime_t conversion_time=datetime_t(),
+        datetime_t conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
         if(!from_tm(tm_time))
@@ -1569,7 +1569,7 @@ public:
      */
     bool from_unixtime(
         time_t source, utc_convert_mode utc_mode=ucm_utc_to_local,
-        const datetime_t& conversion_time=datetime_t(),
+        const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
         FILETIME ft;
@@ -1614,7 +1614,7 @@ public:
      */
     bool to_unixtime(
         time_t* unix_time_out, utc_convert_mode utc_mode=ucm_local_to_utc,
-        const datetime_t& conversion_time=datetime_t(),
+        const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local) const
     {
         datetime_t dtval;
