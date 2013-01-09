@@ -546,13 +546,25 @@ public:
         ucm_local_to_utc, //!< Convert from local to utc.
         ucm_utc_to_local  //!< Convert from utc to local.
     };
+
     /// Describe how to get the timezone bias.
-    enum tz_bias_mode
+    struct timezone_bias_mode
     {
-        tbm_use_local_date, ///< Use 'asOfDate' as a local date/time.
-        tbm_use_utc_date,   ///< Use 'asOfDate' as a utc date/time.
-        tbm_force_standard, ///< Use standard-timezone offset
-        tbm_force_summer    ///< Use summer-timezone offset
+        enum type
+        {
+            standard,       ///< Standard timezone offset
+            daylight_saving ///< Summer timezone offset
+        };
+    };
+
+    /// Root which a time uses as an offset.
+    struct locality
+    {
+        enum type
+        {
+            utc,  ///< A local timezone date/time.
+            local ///< A UTC date/time.
+        };
     };
 
     /** \name Constructors.
@@ -602,53 +614,140 @@ public:
             set_invalid_();
     }
 
-    //! Construct from a SYSTEMTIME.
     /**
-     * \param systimeSrc System time being converted.
-     * \param utcMode Timezone conversion mode.
-     * \param biasMode Specify how to calculate whether the local time is
-     * daylight/standard time.
-     * \param conversionTime Override the date to use for calculating
-     * daylight/standard time.
+     * Construct from a @e SYSTEMTIME.
+     *
+     * @param source
+     *     @e SYSTEMTIME being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     * @param utc_or_local
+     *     Specify whether the override time is a UTC or local date.
      */
-    explicit datetime_t(const SYSTEMTIME& systimeSrc, utc_convert_mode utcMode, tz_bias_mode biasMode = tbm_use_local_date, const datetime_t &conversionTime = datetime_t())
+    explicit datetime_t(
+        const SYSTEMTIME& source, utc_convert_mode utc_mode,
+        const datetime_t& conversion_time=datetime_t(),
+        locality::type utc_or_local=locality::local)
     {
-        if (!from_systemtime(systimeSrc, utcMode, biasMode, conversionTime))
+        if (!from_systemtime(source, utc_mode, conversion_time, utc_or_local))
             set_invalid_();
     }
 
-    //! Construct from a FILETIME.
-    /** Defaults to no conversion. FILETIME values are a tricky beast.
+    /**
+     * Construct from a @e SYSTEMTIME.
+     *
+     * @param source
+     *     @e SYSTEMTIME being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param bias_mode
+     *     Specify whether the local time is daylight/standard time.
+     */
+    explicit datetime_t(
+        const SYSTEMTIME& source, utc_convert_mode utc_mode,
+        timezone_bias_mode::type bias_mode)
+    {
+        if (!from_systemtime(source, utc_mode, bias_mode))
+            set_invalid_();
+    }
+
+    /**
+     * Construct from a @e FILETIME.
+     *
+     * Defaults to no timezone conversion. FILETIME values are a tricky beast.
      * FILETIMEs on FAT are local, as are ZIP files (mostly). On shares and
      * NTFS, they are UTC.
-     * \param filetimeSrc FileTime being converted.
-     * \param utcMode Timezone conversion mode.
-     * \param biasMode Specify how to calculate whether the local time is
-     * daylight/standard time.
-     * \param conversionTime Override the date to use for calculating
-     * daylight/standard time.
      *
-     * \sa from_filetime to_filetime
+     * @param source
+     *     @e FILETIME being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     * @param utc_or_local
+     *     Specify whether the override time is a UTC or local date.
+     *
+     * @sa from_filetime to_filetime
      */
-    explicit datetime_t(const FILETIME& filetimeSrc, utc_convert_mode utcMode =ucm_none, tz_bias_mode biasMode = tbm_use_local_date, const datetime_t &conversionTime = datetime_t())
+    explicit datetime_t(
+        const FILETIME& source, utc_convert_mode utc_mode=ucm_none,
+        const datetime_t& conversion_time=datetime_t(),
+        locality::type utc_or_local=locality::local)
     {
-        if (!from_filetime(filetimeSrc, utcMode, biasMode, conversionTime))
+        if (!from_filetime(source, utc_mode, conversion_time, utc_or_local))
             set_invalid_();
     }
 
-    //! Construct from time_t.
-    /** \sa from_unixtime to_unixtime
-     * Defaults to conversion from utc to local time as time_t is in UTC.
-     * \param timeSrc time_t being converted.
-     * \param utcMode Timezone conversion mode.
-     * \param biasMode Specify how to calculate whether the local time is
-     * daylight/standard time.
-     * \param conversionTime Override the date to use for calculating
-     * daylight/standard time.
+    /**
+     * Construct from a @e FILETIME.
+     *
+     * Defaults to no timezone conversion. FILETIME values are a tricky beast.
+     * FILETIMEs on FAT are local, as are ZIP files (mostly). On shares and
+     * NTFS, they are UTC.
+     *
+     * @param source
+     *     @e FILETIME being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param bias_mode
+     *     Specify whether the local time is daylight/standard time.
+     *
+     * @sa from_filetime to_filetime
      */
-    explicit datetime_t(time_t timeSrc, utc_convert_mode utcMode = ucm_utc_to_local, tz_bias_mode biasMode = tbm_use_local_date, const datetime_t &conversionTime = datetime_t())
+    explicit datetime_t(
+        const FILETIME& source, utc_convert_mode utc_mode,
+        timezone_bias_mode::type bias_mode)
     {
-        if (!from_unixtime(timeSrc, utcMode, biasMode, conversionTime))
+        if (!from_filetime(source, utc_mode, bias_mode))
+            set_invalid_();
+    }
+
+    /**
+     * Construct from a Unix time.
+     *
+     * Defaults to conversion from utc to local time as time_t is in UTC.
+     *
+     * @param source
+     *    Unix time being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     * @param utc_or_local
+     *     Specify whether the override time is a UTC or local date.
+     *
+     * @sa from_unixtime to_unixtime
+     */
+    explicit datetime_t(
+        time_t source, utc_convert_mode utc_mode=ucm_utc_to_local,
+        const datetime_t& conversion_time=datetime_t(),
+        locality::type utc_or_local=locality::local)
+    {
+        if (!from_unixtime(source, utc_mode, conversion_time, utc_or_local))
+            set_invalid_();
+    }
+
+    /**
+     * Construct from a Unix time.
+     *
+     * Defaults to conversion from utc to local time as time_t is in UTC.
+     *
+     * @param source
+     *     Unix time being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param bias_mode
+     *     Specify whether the local time is daylight/standard time.
+     *
+     * @sa from_unixtime to_unixtime
+     */
+    explicit datetime_t(
+        time_t source, utc_convert_mode utc_mode,
+        timezone_bias_mode::type bias_mode)
+    {
+        if (!from_unixtime(source, utc_mode, bias_mode))
             set_invalid_();
     }
 
@@ -1044,24 +1143,39 @@ public:
      * default to the given local date. It is also possible to specify if the
      * "as of" date is in UTC or not.  If missing, it defaults to false.
      */
+
+    /**
+     * Create UTC version of this local time.
+     *
+     * Assuming this datetime is a local time (like that inside a ZIP file or
+     * on a FAT file system) this creates a new version of it as a UTC datetime.
+     * By default, the adjustment is made based on the timezone rules that 
+     * would have been in effect at the UTC date this object represents.  
+     * However, the time can also be converted as though it were on another 
+     * date by passing another date as an argument.
+     * 
+     * Typically the "as of" date is specified as the current time or possibly
+     * the modification or creation date of an enclosing ZIP file.
+     *
+     * @param as_of_date
+     *     Optional alternative date on which to base the timezone conversion.
+     * @param utc_or_local
+     *     Whether `as_of_date` is a local or UTC date.  Defaults to UTC.
+     */
     datetime_t local_to_utc(
-        tz_bias_mode biasMode = tbm_use_local_date,
-        datetime_t asOfDate = datetime_t()) const
+        datetime_t as_of_date=datetime_t(),
+        locality::type utc_or_local=locality::local) const
     {
-        // if they didn't specify if the AS OF date is UTC, use the current date
-        if (asOfDate.invalid())
+        // if they didn't specify an AS OF date, use the current date which
+        // will be local
+        if (as_of_date.invalid())
         {
-            switch(biasMode)
-            {
-                case tbm_use_utc_date:
-                    biasMode = tbm_use_local_date; // no break
-                case tbm_use_local_date:
-                    asOfDate = *this;
-            }
+            utc_or_local = locality::local; // no break
+            as_of_date = *this;
         }
 
         double timezone_bias =
-            local_timezone_bias(asOfDate, biasMode) / (24.*60.);
+            local_timezone_bias(as_of_date, utc_or_local) / (24.*60.);
         double local_date_continuous = to_double(dt_);
         DATE utc_date = to_date(local_date_continuous + timezone_bias);
 
@@ -1069,37 +1183,92 @@ public:
     }
 
     /**
-     * Convert a UTC time to a local time.
+     * Create a UTC version of this local time, explicitly using standard
+     * time or daylight savings.
      *
-     * Takes a UTC time (like that on an NTFS file system) and converts it to
-     * local time, using the timezone rules in effect as of the date specified.
+     * Assuming this datetime is a local time (like that inside a ZIP file or
+     * on a FAT file system) this creates a new version of it as a UTC datetime.
+     * Depending on the argument passed, the adjustment is made as though 
+     * daylight savings were in operation in the local timezone or not.
+     *
+     * @param bias_mode
+     *     Whether to assume daylight savings is in effect.
+     *
+     *     - standard: create local time as though it were not
+     *       daylight savings time
+     *     - daylight_savings: create local time as though it were daylight
+     *       savings time
+     */
+    datetime_t local_to_utc(timezone_bias_mode::type bias_mode) const
+    {
+        double timezone_bias = local_timezone_bias(bias_mode) / (24.*60.);
+        double local_date_continuous = to_double(dt_);
+        DATE utc_date = to_date(local_date_continuous + timezone_bias);
+
+        return datetime_t(utc_date);
+    }
+
+    /**
+     * Create local time version of this UTC time.
+     *
+     * Assuming this datetime is a UTC time (like that on an NTFS file system)
+     * this creates a new version of it in the local timezone.  By default,
+     * the adjustment is made based on the timezone rules that would have been
+     * in effect at the UTC date this object represents.  However, the time can
+     * also be converted as though it were on another date by passing another
+     * date as an argument.
+     * 
      * Typically the "as of" date is specified as the current time or possibly
-     * the modification or creation date of an enclosing ZIP file, or omitted to
-     * default to the given UTC date. It is also possible to specify if the "as
-     * of" date is in UTC or not.  If missing, if the "as of" date is not
-     * specified, it defaults to TRUE (since the "as of" date IS UTC), otherwise
-     * it defaults to false.
+     * the modification or creation date of an enclosing ZIP file.
+     *
+     * @param as_of_date
+     *     Optional alternative date on which to base the timezone conversion.
+     * @param utc_or_local
+     *     Whether `as_of_date` is a local or UTC date.  Defaults to UTC.
      */
     datetime_t utc_to_local(
-        tz_bias_mode biasMode = tbm_use_local_date,
-        datetime_t asOfDate = datetime_t()) const
+        datetime_t as_of_date=datetime_t(),
+        locality::type utc_or_local=locality::utc) const
     {
-        // if they didn't specify if the AS OF date is UTC, use the current date
-        if (asOfDate.invalid())
+        // if they didn't specify an AS OF date, use the current date which
+        // will be UTC
+        if (as_of_date.invalid())
         {
-            switch(biasMode)
-            {
-                case tbm_use_local_date:
-                    biasMode = tbm_use_utc_date; // no break!
-                case tbm_use_utc_date:
-                    asOfDate = *this;
-            }
+            as_of_date = *this;
+            utc_or_local = locality::utc;
         }
 
-        double timezone_bias =
-            local_timezone_bias(asOfDate, biasMode) / (24.*60.);
+        long timezone_bias = local_timezone_bias(as_of_date, utc_or_local);
+        double timezone_bias_days = timezone_bias / (24.*60.);
         double utc_date_continuous = to_double(dt_);
-        DATE local_date = to_date(utc_date_continuous - timezone_bias);
+        DATE local_date = to_date(utc_date_continuous - timezone_bias_days);
+
+        return datetime_t(local_date);
+    }
+
+    /**
+     * Create local time version of this UTC time, explicitly using standard
+     * time or daylight savings.
+     *
+     * Assuming this datetime is a UTC time (like that on an NTFS file system)
+     * this creates a new version of it in the local timezone.  Depending on
+     * the argument passed, the adjustment is made as though daylight savings
+     * were in operation in the timezone or not.
+     *
+     * @param bias_mode
+     *     Whether to assume daylight savings.
+     *
+     *     - standard: create local time as though it were not
+     *       daylight savings time
+     *     - daylight_savings: create local time as though it were daylight
+     *       savings time
+     */
+    datetime_t utc_to_local(timezone_bias_mode::type bias_mode) const
+    {
+        long timezone_bias = local_timezone_bias(bias_mode);
+        double timezone_bias_days = timezone_bias / (24.*60.);
+        double utc_date_continuous = to_double(dt_);
+        DATE local_date = to_date(utc_date_continuous - timezone_bias_days);
 
         return datetime_t(local_date);
     }
@@ -1122,30 +1291,74 @@ public:
         return true;
     }
 
-    /** Convert from a \e SYSTIME struct.
+    /** Convert from a \e SYSTEMTIME struct.
      */
     bool from_systemtime(const SYSTEMTIME& src)
     {
         return oledate_from_datetime_( &dt_, src.wYear, src.wMonth, src.wDay, src.wHour, src.wMinute, src.wSecond, src.wMilliseconds, cmBoth);
     }
 
-    /** Convert from a \e SYSTIME struct.
-     * \param src SYSTEMTIME being converted.
-     * \param utcMode Timezone conversion mode.
-     * \param biasMode Specify how to calculate whether the local time is
-     * daylight/standard time.
-     * \param conversionTime Override the date to use for calculating
-     * daylight/standard time.
+    /**
+     * Convert from a @e SYSTEMTIME struct.
+     *
+     * @param source
+     *     @e SYSTEMTIME being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     * @param utc_or_local
+     *     Specify whether the override time is a UTC or local date.
      */
-    bool from_systemtime(const SYSTEMTIME& src, utc_convert_mode utcMode, tz_bias_mode biasMode = tbm_use_local_date , const datetime_t &conversionTime = datetime_t())
+    bool from_systemtime(
+        const SYSTEMTIME& source, utc_convert_mode utc_mode,
+        const datetime_t& conversion_time=datetime_t(),
+        locality::type utc_or_local=locality::local)
     {
-        if (! from_systemtime( src))
+        if (!from_systemtime(source))
             return false;
-        switch( utcMode)
+
+        switch(utc_mode)
         {
-            case ucm_none: break;
-            case ucm_local_to_utc: *this = local_to_utc( biasMode, conversionTime ); break;
-            case ucm_utc_to_local: *this = utc_to_local( biasMode, conversionTime); break;
+        case ucm_none:
+            break;
+        case ucm_local_to_utc:
+            *this = local_to_utc(conversion_time, utc_or_local);
+            break;
+        case ucm_utc_to_local:
+            *this = utc_to_local(conversion_time, utc_or_local);
+            break;
+        }
+        return true;
+    }
+
+    /**
+     * Convert from a @e SYSTEMTIME struct.
+     *
+     * @param source
+     *     @e SYSTEMTIME being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param bias_mode
+     *     Specify whether the local time is daylight/standard time.
+     */
+    bool from_systemtime(
+        const SYSTEMTIME& source, utc_convert_mode utc_mode,
+        timezone_bias_mode::type bias_mode)
+    {
+        if (!from_systemtime(source))
+            return false;
+
+        switch(utc_mode)
+        {
+        case ucm_none:
+            break;
+        case ucm_local_to_utc:
+            *this = local_to_utc(bias_mode);
+            break;
+        case ucm_utc_to_local:
+            *this = utc_to_local(bias_mode);
+            break;
         }
         return true;
     }
@@ -1158,27 +1371,71 @@ public:
         return  set_check_range_( to_date(ftd));
     }
 
-    /** Convert from a \e FILETIME struct.
-     * \param src FILETIME being converted.
-     * \param utcMode Timezone conversion mode.
-     * \param biasMode Specify how to calculate whether the local time is
-     * daylight/standard time.
-     * \param conversionTime Override the date to use for calculating
-     * daylight/standard time.
+    /**
+     * Convert from a @e FILETIME struct.
+     *
+     * @param source
+     *     @e FILETIME being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     * @param utc_or_local
+     *     Specify whether the override time is a UTC or local date.
      */
-    bool from_filetime(const FILETIME& src, utc_convert_mode utcMode, tz_bias_mode biasMode = tbm_use_local_date, const datetime_t &conversionTime = datetime_t())
+    bool from_filetime(
+        const FILETIME& source, utc_convert_mode utc_mode,
+        const datetime_t& conversion_time=datetime_t(),
+        locality::type utc_or_local=locality::local)
     {
-        if (! from_filetime(src))
+        if (!from_filetime(source))
             return false;
-        switch( utcMode)
+
+        switch(utc_mode)
         {
-            case ucm_none: break;
-            case ucm_local_to_utc: *this = local_to_utc( biasMode, conversionTime ); break;
-            case ucm_utc_to_local: *this = utc_to_local( biasMode, conversionTime); break;
+        case ucm_none:
+            break;
+        case ucm_local_to_utc:
+            *this = local_to_utc(conversion_time, utc_or_local);
+            break;
+        case ucm_utc_to_local:
+            *this = utc_to_local(conversion_time, utc_or_local);
+            break;
         }
         return true;
     }
 
+    /**
+     * Convert from a @e FILETIME struct.
+     *
+     * @param source
+     *     @e FILETIME being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param bias_mode
+     *     Specify whether the local time is daylight/standard time.
+     */
+    bool from_filetime(
+        const FILETIME& source, utc_convert_mode utc_mode,
+        timezone_bias_mode::type bias_mode)
+    {
+        if (!from_filetime(source))
+            return false;
+
+        switch(utc_mode)
+        {
+        case ucm_none:
+            break;
+        case ucm_local_to_utc:
+            *this = local_to_utc(bias_mode);
+            break;
+        case ucm_utc_to_local:
+            *this = utc_to_local(bias_mode);
+            break;
+        }
+        return true;
+    }
+    
     /** Convert to a \e FILETIME struct.
      */
     bool to_filetime( FILETIME *filetime) const
@@ -1198,107 +1455,256 @@ public:
         return from_tm_( tm_time, &dt_, cmBoth);
     }
 
-    /** Convert from a \e tm struct.
-     * \param tm_time 'tm' struct being converted.
-     * \param utcMode Timezone conversion mode.
-     * \param biasMode Specify how to calculate whether the local time is
-     * daylight/standard time.
-     * \param conversionTime Override the date to use for calculating
-     * daylight/standard time.
+    /**
+     * Convert from a @e tm struct.
+     * @param tm_time
+     *     @e tm struct being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     *     Only used if the information cannot be derived from the @e tm struct.
+     * @param utc_or_local
+     *     Whether the optional conversion date is UTC or local.
      */
-    bool from_tm(const struct tm &tm_time, utc_convert_mode utcMode, tz_bias_mode biasMode = tbm_use_local_date, datetime_t conversionTime = datetime_t())
+    bool from_tm(
+        const struct tm &tm_time, utc_convert_mode utc_mode,
+        datetime_t conversion_time=datetime_t(),
+        locality::type utc_or_local=locality::local)
     {
         if(!from_tm(tm_time))
             return false;
-        switch( utcMode)
-        {
-            case ucm_none:
-                break;
-            case ucm_local_to_utc:
-                // Take advantage of tm_isdst to work out dst mode!
-                if( tm_time.tm_isdst >= 0)
-                    biasMode = (( tm_time.tm_isdst ==0)? tbm_force_standard: tbm_force_summer );
-                *this = local_to_utc( biasMode, conversionTime );
-                break;
-            case ucm_utc_to_local:
-                *this = utc_to_local( biasMode, conversionTime);
-                break;
-        }
-        return true;
-    }
 
-    /** Convert from a \e time_t value.
-     * \param val Value to convert.
-     * \param utcMode Timezone conversion mode.
-     * \param biasMode Specify how to calculate whether the local time is
-     * daylight/standard time.
-     * \param conversionTime Override the date to use for calculating
-     * daylight/standard time.
-     */
-    bool from_unixtime( time_t val, utc_convert_mode utcMode = ucm_utc_to_local, tz_bias_mode biasMode = tbm_use_local_date, const datetime_t &conversionTime = datetime_t())
-    {
-        FILETIME ft;
-        __int64 ll =(__int64(val) * 10000000L) + 116444736000000000L;
-        ft.dwLowDateTime = (DWORD) ll;
-        ft.dwHighDateTime = (DWORD)(ll >>32);
-        return from_filetime( ft, utcMode, biasMode, conversionTime);
-    }
-
-    /** Convert to a \e time_t value.
-     * \param val time-t value output.
-     * \param utcMode Timezone conversion mode.
-     * \param biasMode Specify how to calculate whether the local time is
-     * daylight/standard time.
-     * \param conversionTime Override the date to use for calculating
-     * daylight/standard time.
-     */
-    bool to_unixtime(
-        time_t *val, utc_convert_mode utcMode = ucm_local_to_utc,
-        tz_bias_mode biasMode = tbm_use_local_date,
-        const datetime_t &conversionTime = datetime_t()) const
-    {
-        datetime_t dtval;
-        switch( utcMode)
+        switch(utc_mode)
         {
-            case ucm_none:          dtval = *this; break;
-            case ucm_local_to_utc:  dtval = local_to_utc( biasMode, conversionTime ); break;
-            case ucm_utc_to_local:  dtval = utc_to_local( biasMode, conversionTime); break;
+        case ucm_none:
+            break;
+        case ucm_local_to_utc:
+            // Take advantage of tm_isdst to work out dst mode!
+            //
+            // XXX: This doesn't use the conversion_time at all. No, I don't
+            // know why we have this behaviour
+            if (tm_time.tm_isdst == 0)
+            {
+                *this = local_to_utc(timezone_bias_mode::standard);
+            }
+            else if (tm_time.tm_isdst > 0)
+            {
+                *this = local_to_utc(timezone_bias_mode::daylight_saving);
+            }
+            else
+            {
+                *this = local_to_utc(conversion_time, utc_or_local);
+            }
+            break;
+        case ucm_utc_to_local:
+            *this = utc_to_local(conversion_time, utc_or_local);
+            break;
         }
-        FILETIME ft;
-        if( !dtval.to_filetime(&ft) )
-            return false;
-        *val = time_t(((__int64(ft.dwHighDateTime) << 32 | ft.dwLowDateTime) - 116444736000000000L)/10000000L);
+
         return true;
     }
 
     /**
-     * Calculates the local timezone's bias from UTC on the given date, in
+     * Convert from a @e tm struct.
+     *
+     * @param tm_time
+     *     @e 'tm' struct being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param daylight_hint
+     *     Strategy to use for daylight savings time if it cannot be derived
+     *     from the @e tm struct.
+     */
+    bool from_tm(
+        const struct tm &tm_time, utc_convert_mode utc_mode,
+        timezone_bias_mode::type daylight_hint)
+    {
+        if(!from_tm(tm_time))
+            return false;
+
+        switch(utc_mode)
+        {
+        case ucm_none:
+            break;
+        case ucm_local_to_utc:
+            // Take advantage of tm_isdst to work out dst mode!
+            //
+            // XXX: This overrides the specified conversion. No, I don't
+            // know why we have this behaviour
+            if (tm_time.tm_isdst == 0)
+            {
+                *this = local_to_utc(timezone_bias_mode::standard);
+            }
+            else if (tm_time.tm_isdst > 0)
+            {
+                *this = local_to_utc(timezone_bias_mode::daylight_saving);
+            }
+            else
+            {
+                *this = local_to_utc(daylight_hint);
+            }
+            break;
+        case ucm_utc_to_local:
+            *this = utc_to_local(daylight_hint);
+            break;
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Convert from a @e time_t value.
+     *
+     * @param source
+     *     Unix time to convert.
+     * @param utc_mode
+     *     Timezone conversion mode.  By default converts a UTC time_t into
+     *     a local datetime.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     * @param utc_or_local
+     *     Specify whether the override time is a UTC or local date.
+     */
+    bool from_unixtime(
+        time_t source, utc_convert_mode utc_mode=ucm_utc_to_local,
+        const datetime_t& conversion_time=datetime_t(),
+        locality::type utc_or_local=locality::local)
+    {
+        FILETIME ft;
+        __int64 ll = (__int64(source) * 10000000L) + 116444736000000000L;
+        ft.dwLowDateTime = (DWORD) ll;
+        ft.dwHighDateTime = (DWORD)(ll >>32);
+        return from_filetime(ft, utc_mode, conversion_time, utc_or_local);
+    }
+
+    /**
+     * Convert from a @e time_t value.
+     *
+     * @param source
+     *     Unix time being converted.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param bias_mode
+     *     Specify whether the local time is daylight/standard time.
+     */
+    bool from_unixtime(
+        time_t source, utc_convert_mode utc_mode,
+        timezone_bias_mode::type bias_mode)
+    {
+        FILETIME ft;
+        __int64 ll = (__int64(source) * 10000000L) + 116444736000000000L;
+        ft.dwLowDateTime = (DWORD) ll;
+        ft.dwHighDateTime = (DWORD)(ll >>32);
+        return from_filetime(ft, utc_mode, bias_mode);
+    }
+
+    /**
+     * Convert to a @e time_t value.
+     *
+     * @param unix_time_out
+     *     Destination of conversion result.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     * @param utc_or_local
+     *     Specify whether the override time is a UTC or local date.
+     */
+    bool to_unixtime(
+        time_t* unix_time_out, utc_convert_mode utc_mode=ucm_local_to_utc,
+        const datetime_t& conversion_time=datetime_t(),
+        locality::type utc_or_local=locality::local) const
+    {
+        datetime_t dtval;
+
+        switch(utc_mode)
+        {
+        case ucm_none:
+            dtval = *this;
+            break;
+        case ucm_local_to_utc:
+            dtval = local_to_utc(conversion_time, utc_or_local);
+            break;
+        case ucm_utc_to_local:
+            dtval = utc_to_local(conversion_time, utc_or_local);
+            break;
+        }
+
+        FILETIME ft;
+        if (!dtval.to_filetime(&ft))
+            return false;
+
+        *unix_time_out =
+            time_t(((__int64(ft.dwHighDateTime) << 32 | ft.dwLowDateTime) -
+            116444736000000000L)/10000000L);
+        return true;
+    }
+
+    /**
+     * Convert to a @e time_t value.
+     *
+     * @param unix_time_out
+     *     Destination of conversion result.
+     * @param utc_mode
+     *     Timezone conversion mode.
+     * @param conversion_time
+     *     Optional override date to use for calculating daylight/standard time.
+     * @param utc_or_local
+     *     Specify whether the override time is a UTC or local date.
+     */
+    bool to_unixtime(
+        time_t* unix_time_out, utc_convert_mode utc_mode,
+        timezone_bias_mode::type bias_mode) const
+    {
+        datetime_t dtval;
+
+        switch(utc_mode)
+        {
+        case ucm_none:
+            dtval = *this;
+            break;
+        case ucm_local_to_utc:
+            dtval = local_to_utc(bias_mode);
+            break;
+        case ucm_utc_to_local:
+            dtval = utc_to_local(bias_mode);
+            break;
+        }
+
+        FILETIME ft;
+        if (!dtval.to_filetime(&ft))
+            return false;
+
+        *unix_time_out =
+            time_t(((__int64(ft.dwHighDateTime) << 32 | ft.dwLowDateTime) -
+            116444736000000000L)/10000000L);
+        return true;
+    }
+
+    /**
+     * Calculate the local timezone's offset from UTC on the given date, in
      * minutes.
      *
-     * This bias is the number of minutes to subtract from a UTC date to make
-     * a local one.  It must be specified if this "as of" date is in UTC or not.
+     * This offset is called the bias and is the number of minutes to subtract
+     * from a UTC time to make a local one.
+     *
+     * @param dt
+     *     The date and time for which to calculate the bias.
+     * @param is_utc
+     *     Whether to interpret the date as UTC or local.
+     *
+     * @todo A better way might be to make UTCness a fundamental property of
+     *       times at construction so they know whether they are URL or local
+     *       themselves.
      */
-    static long local_timezone_bias(datetime_t dt, tz_bias_mode biasMode)
+    static long local_timezone_bias(datetime_t dt, locality::type utc_or_local)
     {
         TIME_ZONE_INFORMATION tzi;
         ::GetTimeZoneInformation(&tzi);
 
         long baseBias = tzi.Bias;
-        bool isUTC = false;
-        switch (biasMode)
-        {
-            case tbm_force_standard:
-                return baseBias + tzi.StandardBias;
-            case tbm_force_summer:
-                return baseBias + tzi.DaylightBias;
-            case tbm_use_local_date:
-                break;
-            case tbm_use_utc_date:
-                isUTC = true;
-                break;
-            default:
-                COMET_ASSERT(!"Invalid timezone bias mode");
-        }
 
         // if we've even got both time zones set, we have to choose which is
         // active...
@@ -1306,7 +1712,7 @@ public:
         {
             // all local standard time/daylight savings time rules are based on
             // local-time, so add the base bias FIRST
-            if (isUTC)
+            if (utc_or_local == locality::utc)
                 dt -= (baseBias / (24.*60.));
 
             SYSTEMTIME sysTime;
@@ -1326,6 +1732,28 @@ public:
         }
 
         return baseBias + tzi.StandardBias;
+    }
+
+    /**
+     * Calculate the local timezone's offset from UTC in minutes.
+     *
+     * The value depends on the argument to the function which specifies
+     * whether to assume daylight savings is in operation in the local timezone.     * occuring outside of daylight savings time.
+     */
+    static long local_timezone_bias(timezone_bias_mode::type dst_state)
+    {
+        TIME_ZONE_INFORMATION tzi;
+        ::GetTimeZoneInformation(&tzi);
+
+        switch (dst_state)
+        {
+        case timezone_bias_mode::standard:
+            return tzi.Bias + tzi.StandardBias;
+        case timezone_bias_mode::daylight_saving:
+            return tzi.Bias + tzi.DaylightBias;
+        default:
+            COMET_ASSERT(!"Invalid timezone daylight savings state");
+        }
     }
 
 protected:
