@@ -203,7 +203,7 @@ struct unix_time_fixture
     }
 
     void assign_to_datetime(
-        time_t t, datetime_t& d, datetime_t::utc_convert_mode mode)
+        time_t t, datetime_t& d, datetime_t::utc_convert_mode::type mode)
     {
         d.from_unixtime(t, mode);
     }
@@ -220,7 +220,8 @@ struct unix_time_fixture
         return t;
     }
 
-    time_t to_foreign(const datetime_t& d, datetime_t::utc_convert_mode mode)
+    time_t to_foreign(
+        const datetime_t& d, datetime_t::utc_convert_mode::type mode)
     {
         time_t t;
         BOOST_CHECK(d.to_unixtime(&t, mode));
@@ -284,7 +285,8 @@ public:
     }
 
     void assign_to_datetime(
-        const FILETIME& ft, datetime_t& d, datetime_t::utc_convert_mode mode)
+        const FILETIME& ft, datetime_t& d,
+        datetime_t::utc_convert_mode::type mode)
     {
         d.from_filetime(ft, mode);
     }
@@ -301,7 +303,8 @@ public:
         return ft;
     }
 /*
-    FILETIME to_foreign(const datetime_t& d, datetime_t::utc_convert_mode mode)
+    FILETIME to_foreign(
+        const datetime_t& d, datetime_t::utc_convert_mode::type mode)
     {
         FILETIME ft;
         BOOST_ERROR("to_filetime() has no conversion argument");
@@ -369,7 +372,8 @@ public:
     }
 
     void assign_to_datetime(
-        const SYSTEMTIME& st, datetime_t& d, datetime_t::utc_convert_mode mode)
+        const SYSTEMTIME& st, datetime_t& d,
+        datetime_t::utc_convert_mode::type mode)
     {
         d.from_systemtime(st, mode);
     }
@@ -387,7 +391,7 @@ public:
     }
 /*
     SYSTEMTIME to_foreign(
-        const datetime_t& d, datetime_t::utc_convert_mode mode)
+        const datetime_t& d, datetime_t::utc_convert_mode::type mode)
     {
         SYSTEMTIME st;
         BOOST_ERROR("to_systemtime() has no conversion argument");
@@ -431,7 +435,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     foreign_format_constructor_no_conversion, F, date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_time(), datetime_t::ucm_none);
+    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
     f.check_date_matches_utc(d);
 }
 
@@ -439,7 +443,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     foreign_format_constructor_local_conversion, F, date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_time(), datetime_t::ucm_utc_to_local);
+    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::utc_to_local);
     f.check_date_matches_local(d);
 }
 
@@ -448,7 +452,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     localable_date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_local_time(), datetime_t::ucm_local_to_utc);
+    datetime_t d(
+        f.get_local_time(), datetime_t::utc_convert_mode::local_to_utc);
     f.check_date_matches_utc(d);
 }
 
@@ -456,7 +461,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     explicit_conversion_to_local, F, date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_time(), datetime_t::ucm_none);
+    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
     f.check_date_matches_utc(d);
 
     datetime_t d2 = d.utc_to_local();
@@ -468,7 +473,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     explicit_conversion_to_utc, F, localable_date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_local_time(), datetime_t::ucm_none);
+    datetime_t d(f.get_local_time(), datetime_t::utc_convert_mode::none);
     f.check_date_matches_local(d);
 
     datetime_t d2 = d.local_to_utc();
@@ -492,7 +497,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
 {
     F f;
     datetime_t d;
-    f.assign_to_datetime(f.get_time(), d, datetime_t::ucm_none);
+    f.assign_to_datetime(f.get_time(), d, datetime_t::utc_convert_mode::none);
     f.check_date_matches_utc(d);
 }
 
@@ -501,7 +506,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
 {
     F f;
     datetime_t d;
-    f.assign_to_datetime(f.get_time(), d, datetime_t::ucm_utc_to_local);
+    f.assign_to_datetime(
+        f.get_time(), d, datetime_t::utc_convert_mode::utc_to_local);
     f.check_date_matches_local(d);
 }
 
@@ -510,7 +516,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
 {
     F f;
     datetime_t d;
-    f.assign_to_datetime(f.get_local_time(), d, datetime_t::ucm_local_to_utc);
+    f.assign_to_datetime(
+        f.get_local_time(), d, datetime_t::utc_convert_mode::local_to_utc);
     f.check_date_matches_utc(d);
 }
 
@@ -518,7 +525,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     to_foreign_default_conversion, F, date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_time(), datetime_t::ucm_none);
+    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
 
     // TODO: decide what we actually want the defaults to be
     f.check_foreign_matches_utc(f.to_foreign(d));
@@ -527,8 +534,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
 BOOST_AUTO_TEST_CASE( to_foreign_no_conversion )
 {
     unix_time_fixture f;
-    datetime_t d(f.get_time(), datetime_t::ucm_none);
-    f.check_foreign_matches_utc(f.to_foreign(d, datetime_t::ucm_none));
+    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
+    f.check_foreign_matches_utc(
+        f.to_foreign(d, datetime_t::utc_convert_mode::none));
 }
 
 /*
@@ -536,25 +544,27 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     to_foreign_no_conversion, F, date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_time(), datetime_t::ucm_none);
-    f.check_foreign_matches_utc(f.to_foreign(d, datetime_t::ucm_none));
+    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
+    f.check_foreign_matches_utc(
+        f.to_foreign(d, datetime_t::utc_convert_mode::none));
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
     to_foreign_convert_to_local, F, localable_date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_time(), datetime_t::ucm_none);
+    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
     f.check_foreign_matches_local(
-        f.to_foreign(d, datetime_t::ucm_utc_to_local));
+        f.to_foreign(d, datetime_t::utc_convert_mode::utc_to_local));
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
     to_foreign_convert_to_utc, F, localable_date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_local_time(), datetime_t::ucm_none);
-    f.check_foreign_matches_utc(f.to_foreign(d, datetime_t::ucm_local_to_utc));
+    datetime_t d(f.get_local_time(), datetime_t::utc_convert_mode::none);
+    f.check_foreign_matches_utc(
+        f.to_foreign(d, datetime_t::utc_convert_mode::local_to_utc));
 }
 */
 

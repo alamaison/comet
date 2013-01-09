@@ -538,13 +538,15 @@ class datetime_t : private impl::datetime_base<DATE>
 {
 public:
 
-    /** UTC/Local conversion mode.
-     */
-    enum utc_convert_mode
+    /// UTC/Local conversion mode.
+    struct utc_convert_mode
     {
-        ucm_none, //!< No conversion
-        ucm_local_to_utc, //!< Convert from local to utc.
-        ucm_utc_to_local  //!< Convert from utc to local.
+        enum type
+        {
+            none,         ///< No conversion.
+            local_to_utc, ///< Convert from local to utc.
+            utc_to_local  ///< Convert from utc to local.
+        };
     };
 
     /// Describe how to get the timezone bias.
@@ -627,7 +629,7 @@ public:
      *     Specify whether the override time is a UTC or local date.
      */
     explicit datetime_t(
-        const SYSTEMTIME& source, utc_convert_mode utc_mode,
+        const SYSTEMTIME& source, utc_convert_mode::type utc_mode,
         const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
@@ -646,7 +648,7 @@ public:
      *     Specify whether the local time is daylight/standard time.
      */
     explicit datetime_t(
-        const SYSTEMTIME& source, utc_convert_mode utc_mode,
+        const SYSTEMTIME& source, utc_convert_mode::type utc_mode,
         timezone_bias_mode::type bias_mode)
     {
         if (!from_systemtime(source, utc_mode, bias_mode))
@@ -672,7 +674,8 @@ public:
      * @sa from_filetime to_filetime
      */
     explicit datetime_t(
-        const FILETIME& source, utc_convert_mode utc_mode=ucm_none,
+        const FILETIME& source,
+        utc_convert_mode::type utc_mode=utc_convert_mode::none,
         const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
@@ -697,7 +700,7 @@ public:
      * @sa from_filetime to_filetime
      */
     explicit datetime_t(
-        const FILETIME& source, utc_convert_mode utc_mode,
+        const FILETIME& source, utc_convert_mode::type utc_mode,
         timezone_bias_mode::type bias_mode)
     {
         if (!from_filetime(source, utc_mode, bias_mode))
@@ -721,7 +724,8 @@ public:
      * @sa from_unixtime to_unixtime
      */
     explicit datetime_t(
-        time_t source, utc_convert_mode utc_mode=ucm_utc_to_local,
+        time_t source,
+        utc_convert_mode::type utc_mode=utc_convert_mode::utc_to_local,
         const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
@@ -744,7 +748,7 @@ public:
      * @sa from_unixtime to_unixtime
      */
     explicit datetime_t(
-        time_t source, utc_convert_mode utc_mode,
+        time_t source, utc_convert_mode::type utc_mode,
         timezone_bias_mode::type bias_mode)
     {
         if (!from_unixtime(source, utc_mode, bias_mode))
@@ -1311,7 +1315,7 @@ public:
      *     Specify whether the override time is a UTC or local date.
      */
     bool from_systemtime(
-        const SYSTEMTIME& source, utc_convert_mode utc_mode,
+        const SYSTEMTIME& source, utc_convert_mode::type utc_mode,
         const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
@@ -1320,12 +1324,12 @@ public:
 
         switch(utc_mode)
         {
-        case ucm_none:
+        case utc_convert_mode::none:
             break;
-        case ucm_local_to_utc:
+        case utc_convert_mode::local_to_utc:
             *this = local_to_utc(conversion_time, utc_or_local);
             break;
-        case ucm_utc_to_local:
+        case utc_convert_mode::utc_to_local:
             *this = utc_to_local(conversion_time, utc_or_local);
             break;
         }
@@ -1343,7 +1347,7 @@ public:
      *     Specify whether the local time is daylight/standard time.
      */
     bool from_systemtime(
-        const SYSTEMTIME& source, utc_convert_mode utc_mode,
+        const SYSTEMTIME& source, utc_convert_mode::type utc_mode,
         timezone_bias_mode::type bias_mode)
     {
         if (!from_systemtime(source))
@@ -1351,12 +1355,12 @@ public:
 
         switch(utc_mode)
         {
-        case ucm_none:
+        case utc_convert_mode::none:
             break;
-        case ucm_local_to_utc:
+        case utc_convert_mode::local_to_utc:
             *this = local_to_utc(bias_mode);
             break;
-        case ucm_utc_to_local:
+        case utc_convert_mode::utc_to_local:
             *this = utc_to_local(bias_mode);
             break;
         }
@@ -1384,7 +1388,7 @@ public:
      *     Specify whether the override time is a UTC or local date.
      */
     bool from_filetime(
-        const FILETIME& source, utc_convert_mode utc_mode,
+        const FILETIME& source, utc_convert_mode::type utc_mode,
         const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
@@ -1393,12 +1397,12 @@ public:
 
         switch(utc_mode)
         {
-        case ucm_none:
+        case utc_convert_mode::none:
             break;
-        case ucm_local_to_utc:
+        case utc_convert_mode::local_to_utc:
             *this = local_to_utc(conversion_time, utc_or_local);
             break;
-        case ucm_utc_to_local:
+        case utc_convert_mode::utc_to_local:
             *this = utc_to_local(conversion_time, utc_or_local);
             break;
         }
@@ -1416,7 +1420,7 @@ public:
      *     Specify whether the local time is daylight/standard time.
      */
     bool from_filetime(
-        const FILETIME& source, utc_convert_mode utc_mode,
+        const FILETIME& source, utc_convert_mode::type utc_mode,
         timezone_bias_mode::type bias_mode)
     {
         if (!from_filetime(source))
@@ -1424,12 +1428,12 @@ public:
 
         switch(utc_mode)
         {
-        case ucm_none:
+        case utc_convert_mode::none:
             break;
-        case ucm_local_to_utc:
+        case utc_convert_mode::local_to_utc:
             *this = local_to_utc(bias_mode);
             break;
-        case ucm_utc_to_local:
+        case utc_convert_mode::utc_to_local:
             *this = utc_to_local(bias_mode);
             break;
         }
@@ -1468,7 +1472,7 @@ public:
      *     Whether the optional conversion date is UTC or local.
      */
     bool from_tm(
-        const struct tm &tm_time, utc_convert_mode utc_mode,
+        const struct tm &tm_time, utc_convert_mode::type utc_mode,
         datetime_t conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
@@ -1477,9 +1481,9 @@ public:
 
         switch(utc_mode)
         {
-        case ucm_none:
+        case utc_convert_mode::none:
             break;
-        case ucm_local_to_utc:
+        case utc_convert_mode::local_to_utc:
             // Take advantage of tm_isdst to work out dst mode!
             //
             // XXX: This doesn't use the conversion_time at all. No, I don't
@@ -1497,7 +1501,7 @@ public:
                 *this = local_to_utc(conversion_time, utc_or_local);
             }
             break;
-        case ucm_utc_to_local:
+        case utc_convert_mode::utc_to_local:
             *this = utc_to_local(conversion_time, utc_or_local);
             break;
         }
@@ -1517,7 +1521,7 @@ public:
      *     from the @e tm struct.
      */
     bool from_tm(
-        const struct tm &tm_time, utc_convert_mode utc_mode,
+        const struct tm &tm_time, utc_convert_mode::type utc_mode,
         timezone_bias_mode::type daylight_hint)
     {
         if(!from_tm(tm_time))
@@ -1525,9 +1529,9 @@ public:
 
         switch(utc_mode)
         {
-        case ucm_none:
+        case utc_convert_mode::none:
             break;
-        case ucm_local_to_utc:
+        case utc_convert_mode::local_to_utc:
             // Take advantage of tm_isdst to work out dst mode!
             //
             // XXX: This overrides the specified conversion. No, I don't
@@ -1545,7 +1549,7 @@ public:
                 *this = local_to_utc(daylight_hint);
             }
             break;
-        case ucm_utc_to_local:
+        case utc_convert_mode::utc_to_local:
             *this = utc_to_local(daylight_hint);
             break;
         }
@@ -1568,7 +1572,8 @@ public:
      *     Specify whether the override time is a UTC or local date.
      */
     bool from_unixtime(
-        time_t source, utc_convert_mode utc_mode=ucm_utc_to_local,
+        time_t source,
+        utc_convert_mode::type utc_mode=utc_convert_mode::utc_to_local,
         const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local)
     {
@@ -1590,7 +1595,7 @@ public:
      *     Specify whether the local time is daylight/standard time.
      */
     bool from_unixtime(
-        time_t source, utc_convert_mode utc_mode,
+        time_t source, utc_convert_mode::type utc_mode,
         timezone_bias_mode::type bias_mode)
     {
         FILETIME ft;
@@ -1613,7 +1618,8 @@ public:
      *     Specify whether the override time is a UTC or local date.
      */
     bool to_unixtime(
-        time_t* unix_time_out, utc_convert_mode utc_mode=ucm_local_to_utc,
+        time_t* unix_time_out,
+        utc_convert_mode::type utc_mode=utc_convert_mode::local_to_utc,
         const datetime_t& conversion_time=datetime_t(dt_invalid),
         locality::type utc_or_local=locality::local) const
     {
@@ -1621,13 +1627,13 @@ public:
 
         switch(utc_mode)
         {
-        case ucm_none:
+        case utc_convert_mode::none:
             dtval = *this;
             break;
-        case ucm_local_to_utc:
+        case utc_convert_mode::local_to_utc:
             dtval = local_to_utc(conversion_time, utc_or_local);
             break;
-        case ucm_utc_to_local:
+        case utc_convert_mode::utc_to_local:
             dtval = utc_to_local(conversion_time, utc_or_local);
             break;
         }
@@ -1655,20 +1661,20 @@ public:
      *     Specify whether the override time is a UTC or local date.
      */
     bool to_unixtime(
-        time_t* unix_time_out, utc_convert_mode utc_mode,
+        time_t* unix_time_out, utc_convert_mode::type utc_mode,
         timezone_bias_mode::type bias_mode) const
     {
         datetime_t dtval;
 
         switch(utc_mode)
         {
-        case ucm_none:
+        case utc_convert_mode::none:
             dtval = *this;
             break;
-        case ucm_local_to_utc:
+        case utc_convert_mode::local_to_utc:
             dtval = local_to_utc(bias_mode);
             break;
-        case ucm_utc_to_local:
+        case utc_convert_mode::utc_to_local:
             dtval = utc_to_local(bias_mode);
             break;
         }
