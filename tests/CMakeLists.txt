@@ -24,6 +24,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 include_directories(../include)
 
+include(max_warnings.cmake)
+
+
 project(comet-unit-tests)
 
 set(SOURCES
