@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_SUITE( com_ptr_tests )
 BOOST_AUTO_TEST_CASE( destruction )
 {
     long count_before = comet::module().rc();
-    bool destructor_executed;
+    bool destructor_executed = false;
     {
         struct A : public simple_object<IDummyInterface>
         {
