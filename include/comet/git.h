@@ -82,7 +82,7 @@ namespace comet {
         {
             HRESULT hr = git_->RevokeInterfaceFromGlobal(c.get_cookie());
             hr;
-            assert(SUCCEEDED(h));
+            assert(SUCCEEDED(hr));
         }
 
     private:
