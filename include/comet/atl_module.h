@@ -20,6 +20,9 @@
 #ifndef COMET_ATL_MODULE_H
 #define COMET_ATL_MODULE_H
 
+// ATL is proprietary to the Microsoft compilers
+#ifdef _MSC_VER
+
 #include <comet/server.h>
 
 #include <atlbase.h>
@@ -117,5 +120,7 @@ namespace comet {
     };
     //@}
 } // namespace comet
+
+#endif
 
 #endif
