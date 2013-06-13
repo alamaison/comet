@@ -32,17 +32,19 @@
 #pragma warning(push)
 #pragma warning(disable : 4127)
 
-#define COMET_VARIANT_OPERATOR(op, name)                                                                                        \
-    variant_t operator##op(const variant_t& x) const                                                            \
-    {                                                                                                            \
-        VARIANT t;                                                                                                \
-        Var##name(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(x.get_var()), &t) | raise_exception;    \
-        return auto_attach(t);                                                                                    \
-    }                                                                                                            \
-                                                                                                                \
-    variant_t& operator##op##=(const variant_t& x)                                                                \
-    {                                                                                                            \
-        return operator=(operator##op(x));                                                                        \
+#define COMET_VARIANT_OPERATOR(op, name)                                        \
+    variant_t operator op(const variant_t& x) const                             \
+    {                                                                           \
+        VARIANT t;                                                              \
+        Var##name(                                                              \
+            const_cast<VARIANT*>(get_var()),                                    \
+            const_cast<VARIANT*>(x.get_var()), &t) | raise_exception;           \
+        return auto_attach(t);                                                  \
+    }                                                                           \
+                                                                                \
+    variant_t& operator op##=(const variant_t& x)                               \
+    {                                                                           \
+        return operator=(operator op(x));                                      \
     }
 
 #define COMET_VARIANT_CONVERTERS_EX_(type, vartype, func)            \
