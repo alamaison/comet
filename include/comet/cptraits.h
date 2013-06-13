@@ -27,7 +27,7 @@
 #include <comet/config.h>
 #include <comet/error_fwd.h> // raise_exception
 
-#include <Windows.h> // HRESULT
+#include <windows.h> // HRESULT
 
 namespace comet
 {

@@ -2,7 +2,7 @@
 #include <comet/tlbinfo.h>
 #include <comet/uuid.h>
 
-#include <OAIdl.h> // ITypeInfo, ITypeLib
+#include <oaidl.h> // ITypeInfo, ITypeLib
 
 using comet::com_ptr;
 using comet::uuid_t;

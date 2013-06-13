@@ -6,7 +6,7 @@
 
 #include <ctime>
 
-#include <Windows.h> // DATE
+#include <windows.h> // DATE
 
 using comet::datetime_t;
 

@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2000, 2001 Sofus Mortensen
+ * Copyright (C) 2013 Alexander Lamaison <awl03@doc.ic.ac.uk>
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -24,7 +25,7 @@
 #include <stdexcept>
 #include <wtypes.h>
 
-#include <OAIdl.h>
+#include <oaidl.h>
 
 #pragma warning(push)
 #pragma warning(disable : 4290)

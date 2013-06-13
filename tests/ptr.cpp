@@ -4,7 +4,7 @@
 #include <comet/ptr.h>
 #include <comet/server.h>
 
-#include <ObjIdl.h> // IStorage, IPersist
+#include <objidl.h> // IStorage, IPersist
 
 using comet::com_ptr;
 using comet::simple_object;
