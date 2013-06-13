@@ -31,6 +31,7 @@
 
 namespace comet{
 
+class bstr_t;
 
 /*! \addtogroup COMType
  */
