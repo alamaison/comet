@@ -111,6 +111,12 @@
 #endif
 #endif
 
+#ifdef __MINGW32__
+#define COMET_PARTIAL_SPECIALISATION
+#define COMET_NESTED_TEMPLATES
+#define COMET_GCC_HEADERS
+#define COMET_STD_ITERATOR
+#endif
 
 // Use COMET_STRICT_TYPENAME only where MSVC barfs on stricter typename usage
 // required by GCC.
@@ -150,11 +156,6 @@
 #ifdef __SGI_STL
 #define COMET_STD_ITERATOR
 #else
-#ifdef __MINGW32__
-__STL_BEGIN_NAMESPACE
-template <class _Tp, class _Distance>struct iterator:  bidirectional_iterator<_Tp,_Distance>{};
-__STL_END_NAMESPACE
-#endif // __MINGW32__
 #endif
 #else
 #ifdef _CPPLIB_VER
