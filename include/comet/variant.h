@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2000, 2001 Sofus Mortensen, Michael Geddes
+ * Copyright (C) 2013 Alexander Lamaison <awl03@doc.ic.ac.uk>
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -148,7 +149,7 @@ namespace comet {
             V_VT(x)= VT_EMPTY;
         }
 
-        void create(const VARIANT& v) throw(com_error)
+        void create(const VARIANT& v)
         {
             HRESULT hr = ::VariantCopy(this, const_cast<VARIANT*>(&v));
             if (FAILED(hr)) {
@@ -225,7 +226,7 @@ namespace comet {
             \exception com_error
                 Thrown if underlying VariantCopy fails.
         */
-        variant_t(const variant_t& v) throw(com_error)
+        variant_t(const variant_t& v)
         {
             init();
             create(v);
@@ -247,7 +248,7 @@ namespace comet {
             \exception com_error
                 Thrown if underlying VariantChangeTypeEx fails.
         */
-        variant_t(const variant_t& v, VARTYPE vartype) throw(com_error)
+        variant_t(const variant_t& v, VARTYPE vartype)
         {
             init();
             if (vartype != V_VT(&v))
@@ -259,7 +260,7 @@ namespace comet {
                 ::VariantCopy(this, const_cast<VARIANT*>(v.get_var()));
         }
 
-        variant_t(const variant_t& v, VARTYPE vartype, std::nothrow_t) throw(com_error)
+        variant_t(const variant_t& v, VARTYPE vartype, std::nothrow_t)
         {
             init();
             if (vartype != V_VT(&v))
@@ -276,7 +277,7 @@ namespace comet {
             \exception com_error
                 Thrown if underlying VariantCopy fails.
         */
-        explicit variant_t(const VARIANT& v) throw(com_error)
+        explicit variant_t(const VARIANT& v)
         {
             init();
             create(v);
@@ -620,7 +621,7 @@ namespace comet {
         }
 
         /// Assignment operator
-        variant_t& operator=(const variant_t& x) throw(com_error)
+        variant_t& operator=(const variant_t& x)
         {
             variant_t t(x);
             swap(t);
@@ -630,12 +631,12 @@ namespace comet {
         //! \name Comparison operators
         //@{
         template<typename T>
-        bool operator==(const T& x) const throw(com_error)
+        bool operator==(const T& x) const
         {
             return operator==( variant_t(x) );
         }
 
-        bool operator==(const variant_t& x) const throw(com_error)
+        bool operator==(const variant_t& x) const
         {
             if (V_VT(&x) != V_VT(this)) {
                 if (V_VT(this) == VT_EMPTY || V_VT(&x) == VT_EMPTY) return false;
@@ -655,23 +656,23 @@ namespace comet {
         }
 
         template<typename T>
-        bool operator!=(const T& x) const throw(com_error)
+        bool operator!=(const T& x) const
         {
             return !operator==(variant_t(x));
         }
 
-        bool operator!=(const variant_t& x) const throw(com_error)
+        bool operator!=(const variant_t& x) const
         {
             return !operator==(x);
         }
 
         template<typename T>
-        bool operator<(const T& x) const throw(com_error)
+        bool operator<(const T& x) const
         {
             return operator<(variant_t(x));
         }
 
-        bool operator<(const variant_t& x) const throw(com_error)
+        bool operator<(const variant_t& x) const
         {
             if (V_VT(&x) != V_VT(this)) {
                 return VARCMP_LT == (impl::var_cmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(variant_t(x, V_VT(this)).get_var()), GetThreadLocale(), 0) | raise_exception);
@@ -681,18 +682,18 @@ namespace comet {
         }
 
         template<typename T>
-        bool operator<=(const T& x) const throw(com_error)
+        bool operator<=(const T& x) const
         {
             return operator<=(variant_t(x));
         }
 
         template<typename T>
-        bool operator>(const T& x) const throw(com_error)
+        bool operator>(const T& x) const
         {
             return operator>(variant_t(x));
         }
 
-        bool operator>(const variant_t& x) const throw(com_error)
+        bool operator>(const variant_t& x) const
         {
             if (V_VT(&x) != V_VT(this)) {
                 return VARCMP_GT == (impl::var_cmp(const_cast<VARIANT*>(get_var()), const_cast<VARIANT*>(variant_t(x, V_VT(this)).get_var()), GetThreadLocale(), 0) | raise_exception);
@@ -701,18 +702,18 @@ namespace comet {
             }
         }
 
-        bool operator<=(const variant_t& x) const throw(com_error)
+        bool operator<=(const variant_t& x) const
         {
             return !operator>(x);
         }
 
         template<typename T>
-        bool operator>=(const T& x) const throw(com_error)
+        bool operator>=(const T& x) const
         {
             return operator>=(variant_t(x));
         }
 
-        bool operator>=(const variant_t& x) const throw(com_error)
+        bool operator>=(const variant_t& x) const
         {
             return !operator<(x);
         }
@@ -737,7 +738,7 @@ namespace comet {
             return auto_attach(t);
         }
 
-        void change_type(VARTYPE vartype) throw(com_error)
+        void change_type(VARTYPE vartype)
         {
             if (vartype != V_VT(this))
                 ::VariantChangeTypeEx(get_var(),
