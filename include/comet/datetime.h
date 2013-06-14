@@ -50,6 +50,8 @@ public:
     datetime_exception( const char *desc) : desc_(desc)
     {}
 
+    ~datetime_exception() throw();
+
     const char* what() const throw()
     {
         return desc_.c_str();

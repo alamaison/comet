@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2000, 2001 Sofus Mortensen
+ * Copyright (C) 2013 Alexander Lamaison <awl03@doc.ic.ac.uk>
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -129,6 +130,8 @@ namespace comet {
         explicit com_error(HRESULT hr, const com_ptr<IErrorInfo>& ei)
             : hr_(hr), ei_(ei), std::runtime_error("")
         {}
+
+        virtual ~com_error() throw();
 
     public:
         //! Return a string with a description of the error
