@@ -3,6 +3,7 @@
   */
 /*
  * Copyright © 2000-2002 Sofus Mortensen, Michael Geddes
+ * Copyright (C) 2013 Alexander Lamaison <awl03@doc.ic.ac.uk>
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -159,10 +160,14 @@ namespace comet {
     class variant_t;
     template<typename Itf> class com_ptr;
     class identity_ptr;
-    namespace thread_model{
-        enum thread_model_t;
-    }
-    template<typename T, enum thread_model::thread_model_t TM, COMET_LIST_TEMPLATE_0 > struct coclass;
+
+    // The following uses illegal (in C++03) enum forward-declaration.  Only
+    // by commented-out code so commented this out as well.
+    //namespace thread_model{
+    //    enum thread_model_t;
+    //}
+    //template<typename T, enum thread_model::thread_model_t TM, COMET_LIST_TEMPLATE_0 > struct coclass;
+
     template<class C> struct aggregate_inner_unknown ;
 
     // comet implementation details
