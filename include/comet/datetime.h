@@ -400,7 +400,13 @@ namespace impl {
     bool
     datetime_base<T>::from_tm_( const struct tm &src, DATE *dt, convert_mode mode)
     {
-        return oledate_from_datetime_( dt, unsigned short(src.tm_year + 1900),unsigned short( src.tm_mon+1),unsigned short( src.tm_mday),unsigned short( src.tm_hour),unsigned short( src.tm_min),unsigned short( src.tm_sec), 0U, mode);
+        return oledate_from_datetime_(
+            dt, static_cast<unsigned short>(src.tm_year + 1900),
+            static_cast<unsigned short>(src.tm_mon+1),
+            static_cast<unsigned short>(src.tm_mday),
+            static_cast<unsigned short>(src.tm_hour),
+            static_cast<unsigned short>(src.tm_min),
+            static_cast<unsigned short>(src.tm_sec), 0U, mode);
     }
 
     // Convert OLE date to TM. \retval true Successful conversion.
@@ -1139,7 +1145,7 @@ public:
 
     /**
      * Convert a local time to UTC.
-     * 
+     *
      * Takes a local time (like that inside a ZIP file, or on a FAT file
      * system) and converts it to UTC, using the timezone rules in effect as
      * of the date specified.  Typically the "as of" date is specified as the
@@ -1153,11 +1159,11 @@ public:
      *
      * Assuming this datetime is a local time (like that inside a ZIP file or
      * on a FAT file system) this creates a new version of it as a UTC datetime.
-     * By default, the adjustment is made based on the timezone rules that 
-     * would have been in effect at the UTC date this object represents.  
-     * However, the time can also be converted as though it were on another 
+     * By default, the adjustment is made based on the timezone rules that
+     * would have been in effect at the UTC date this object represents.
+     * However, the time can also be converted as though it were on another
      * date by passing another date as an argument.
-     * 
+     *
      * Typically the "as of" date is specified as the current time or possibly
      * the modification or creation date of an enclosing ZIP file.
      *
@@ -1192,7 +1198,7 @@ public:
      *
      * Assuming this datetime is a local time (like that inside a ZIP file or
      * on a FAT file system) this creates a new version of it as a UTC datetime.
-     * Depending on the argument passed, the adjustment is made as though 
+     * Depending on the argument passed, the adjustment is made as though
      * daylight savings were in operation in the local timezone or not.
      *
      * @param bias_mode
@@ -1221,7 +1227,7 @@ public:
      * in effect at the UTC date this object represents.  However, the time can
      * also be converted as though it were on another date by passing another
      * date as an argument.
-     * 
+     *
      * Typically the "as of" date is specified as the current time or possibly
      * the modification or creation date of an enclosing ZIP file.
      *
@@ -1371,7 +1377,9 @@ public:
      */
     bool from_filetime(const FILETIME& src)
     {
-        double ftd = (((__int64(src.dwHighDateTime) << 32 | src.dwLowDateTime)/(36000000000.)) - 2620920.)/24;
+        double ftd =
+            (((static_cast<__int64>(src.dwHighDateTime) << 32 |
+               src.dwLowDateTime)/(36000000000.)) - 2620920.)/24;
         return  set_check_range_( to_date(ftd));
     }
 
@@ -1439,14 +1447,14 @@ public:
         }
         return true;
     }
-    
+
     /** Convert to a \e FILETIME struct.
      */
     bool to_filetime( FILETIME *filetime) const
     {
         double val = ((to_double(dt_)  * 24.) + 2620920.)*(36000000000.) ;
 
-        __int64 llval = __int64(val);
+        __int64 llval = static_cast<__int64>(val);
         filetime->dwHighDateTime = long (llval >> 32);
         filetime->dwLowDateTime = long (llval);
         return val > 0;
@@ -1578,7 +1586,8 @@ public:
         locality::type utc_or_local=locality::local)
     {
         FILETIME ft;
-        __int64 ll = (__int64(source) * 10000000L) + 116444736000000000L;
+        __int64 ll =
+            (static_cast<__int64>(source) * 10000000L) + 116444736000000000L;
         ft.dwLowDateTime = (DWORD) ll;
         ft.dwHighDateTime = (DWORD)(ll >>32);
         return from_filetime(ft, utc_mode, conversion_time, utc_or_local);
@@ -1599,7 +1608,8 @@ public:
         timezone_bias_mode::type bias_mode)
     {
         FILETIME ft;
-        __int64 ll = (__int64(source) * 10000000L) + 116444736000000000L;
+        __int64 ll =
+            (static_cast<__int64>(source) * 10000000L) + 116444736000000000L;
         ft.dwLowDateTime = (DWORD) ll;
         ft.dwHighDateTime = (DWORD)(ll >>32);
         return from_filetime(ft, utc_mode, bias_mode);
@@ -1643,8 +1653,10 @@ public:
             return false;
 
         *unix_time_out =
-            time_t(((__int64(ft.dwHighDateTime) << 32 | ft.dwLowDateTime) -
-            116444736000000000L)/10000000L);
+            static_cast<time_t>(
+                ((static_cast<__int64>(ft.dwHighDateTime) << 32
+                  | ft.dwLowDateTime) -
+                 116444736000000000L)/10000000L);
         return true;
     }
 
@@ -1684,8 +1696,10 @@ public:
             return false;
 
         *unix_time_out =
-            time_t(((__int64(ft.dwHighDateTime) << 32 | ft.dwLowDateTime) -
-            116444736000000000L)/10000000L);
+            static_cast<time_t>(
+                ((static_cast<__int64>(ft.dwHighDateTime) << 32
+                  | ft.dwLowDateTime) -
+                 116444736000000000L)/10000000L);
         return true;
     }
 

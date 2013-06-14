@@ -74,7 +74,7 @@ namespace comet {
                 int a = parse_nibble(*s);
                 ++s;
                 int b = parse_nibble(*s);
-                p[j] = unsigned char(a << 4 | b);
+                p[j] = static_cast<unsigned char>(a << 4 | b);
             }
             else if (*s != C('-'))
                 return false;
