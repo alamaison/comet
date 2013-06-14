@@ -99,13 +99,6 @@ namespace comet {
     class bstr_t {
     public:
         typedef wchar_t value_type;
-#if !(defined(_STLP_DEBUG) || (defined(_HAS_ITERATOR_DEBUGGING)) && _MSC_VER >= 1400)
-        typedef std::wstring::iterator iterator;
-        typedef std::wstring::const_iterator const_iterator;
-
-        typedef std::wstring::reverse_iterator reverse_iterator;
-        typedef std::wstring::const_reverse_iterator const_reverse_iterator;
-#else // _STLP_DEBUG
         typedef wchar_t *iterator;
         typedef const wchar_t *const_iterator;
 #if defined(COMET_STD_ITERATOR)
@@ -116,7 +109,6 @@ namespace comet {
         typedef std::reverse_iterator<iterator,wchar_t> reverse_iterator;
         typedef std::reverse_iterator<const_iterator,wchar_t> const_reverse_iterator;
 #endif
-#endif // _STLP_DEBUG
 
         typedef std::wstring::size_type size_type;
         typedef std::wstring::difference_type difference_type;
