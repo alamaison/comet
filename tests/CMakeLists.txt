@@ -22,8 +22,6 @@ find_package(
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 
-include_directories(../include)
-
 include(max_warnings.cmake)
 
 

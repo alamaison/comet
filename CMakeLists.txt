@@ -17,6 +17,10 @@ cmake_minimum_required(VERSION 2.4)
 
 project(comet)
 
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 set(LIBRARY_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/array.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/assert.h
