@@ -1,5 +1,5 @@
 #
-# Copyright © 2012 Alexander Lamaison
+# Copyright (C) 2012, 2013 Alexander Lamaison <alexander.lamaison@gmail.com>
 #
 # This material is provided "as is", with absolutely no warranty
 # expressed or implied. Any use is at your own risk. Permission to
@@ -61,6 +61,7 @@ set(LIBRARY_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/static_assert.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/stl.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/stl_enum.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/stream.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/threading.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/tlbinfo.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/tstring.h
