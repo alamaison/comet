@@ -323,4 +323,51 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error )
     BOOST_CHECK_EQUAL(buf.str(), "gob");
 }
 
+BOOST_AUTO_TEST_CASE( read_then_write_stl_stream )
+{
+    string data = "gobbeldy gook";
+    stringstream stl_stream(data);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    unsigned int hop = 4;
+    vector<char> buffer(hop);
+    ULONG count = 99;
+    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), S_OK);
+    BOOST_CHECK_EQUAL(count, hop);
+
+    BOOST_CHECK_EQUAL(stl_stream.str(), data);
+    BOOST_CHECK_EQUAL_COLLECTIONS(
+        buffer.begin(), buffer.end(), data.begin(), data.begin() + hop);
+
+    BOOST_CHECK_EQUAL(s->Write("bob", 3, &count), S_OK);
+    BOOST_CHECK_EQUAL(count, 3U);
+
+    string expected = "gobbboby gook";
+    BOOST_CHECK_EQUAL(stl_stream.str(), expected);
+}
+
+BOOST_AUTO_TEST_CASE( write_then_read_stl_stream )
+{
+    string data = "gobbeldy gook";
+    stringstream stl_stream(data);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    ULONG count = 99;
+    BOOST_CHECK_EQUAL(s->Write("bob", 3, &count), S_OK);
+    BOOST_CHECK_EQUAL(count, 3U);
+
+    vector<char> buffer(data.size());
+    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), S_FALSE);
+    BOOST_CHECK_EQUAL(count, data.size() - 3);
+
+    string expected = "bobbeldy gook";
+    BOOST_CHECK_EQUAL(stl_stream.str(), expected);
+    BOOST_CHECK_EQUAL_COLLECTIONS(
+        buffer.begin(), buffer.begin() + count,
+        expected.begin() + 3, expected.end());
+    BOOST_CHECK_EQUAL(count, 10U);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

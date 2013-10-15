@@ -2,7 +2,7 @@
   * IStream adapters.
   */
 /*
- * Copyright (C) 2013 Alexander Lamaison
+ * Copyright (C) 2013 Alexander Lamaison <alexander.lamaison@gmail.com>
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -36,7 +36,7 @@ namespace impl {
     // These do_read/write helper functions dispatch the stream-type specific code
     // so that we only need one class to implement all the stream adapters
 
-    inline void do_read(
+    inline void do_istream_read(
         std::istream& stream, void* buffer, ULONG buffer_size_in_bytes,
         ULONG& bytes_read_out)
     {
@@ -89,15 +89,7 @@ namespace impl {
         //    buffer_size / sizeof(std::istream::char_type));
     }
 
-    inline void do_read(
-        std::ostream& /*stream*/, void* /*buffer*/, ULONG /*buffer_size*/,
-        ULONG& /*bytes_read_out*/)
-    {
-        throw com_error(
-            "std::ostream does not support reading", STG_E_ACCESSDENIED);
-    }
-
-    inline void do_write(
+    inline void do_ostream_write(
         std::ostream& stream, const void* buffer, ULONG buffer_size_in_bytes,
         ULONG& bytes_written_out)
     {
@@ -148,15 +140,126 @@ namespace impl {
         //    buffer_size / sizeof(std::ostream::char_type));
     }
 
-    inline void do_write(
-        std::istream& /*stream*/, const void* /*buffer*/, ULONG /*buffer_size*/,
-        ULONG& written_out)
-    {
-        written_out = 0U;
-        throw com_error(
-            "std::istream does not support writing", STG_E_ACCESSDENIED);
-    }
+    template<typename Stream, bool is_istream, bool is_ostream>
+    class stream_traits;
 
+    template<typename Stream>
+    class stream_traits<Stream, true, false>
+    {
+    public:
+        void do_read(
+            Stream& stream, void* buffer, ULONG buffer_size_in_bytes,
+            ULONG& bytes_read_out)
+        {
+            do_istream_read(stream, buffer, buffer_size_in_bytes, bytes_read_out);
+        }
+
+        void do_write(
+            Stream& /*stream*/, const void* /*buffer*/,
+            ULONG /*buffer_size_in_bytes*/, ULONG& bytes_written_out)
+        {
+            bytes_written_out = 0U;
+            throw com_error(
+                "std::istream does not support writing", STG_E_ACCESSDENIED);
+        }
+    };
+
+    template<typename Stream>
+    class stream_traits<Stream, false, true>
+    {
+    public:
+
+        void do_read(
+            Stream& /*stream*/, void* /*buffer*/,
+            ULONG /*buffer_size_in_bytes*/, ULONG& bytes_read_out)
+        {
+            bytes_read_out = 0U;
+            throw com_error(
+                "std::ostream does not support reading", STG_E_ACCESSDENIED);
+        }
+
+        void do_write(
+            Stream& stream, const void* buffer,
+            ULONG buffer_size_in_bytes, ULONG& bytes_written_out)
+        {
+            do_ostream_write(
+                stream, buffer, buffer_size_in_bytes, bytes_written_out);
+        }
+    };
+
+    template<typename Stream>
+    class stream_traits<Stream, true, true>
+    {
+    private:
+
+        enum last_stream_operation
+        {
+            read,
+            write
+        };
+
+    public:
+
+        stream_traits() : m_last_op(read) {}
+
+        void do_read(
+            Stream& stream, void* buffer, ULONG buffer_size_in_bytes,
+            ULONG& bytes_read_out)
+        {
+            bytes_read_out = 0U;
+
+            // sync reading position with writing position, which was the last
+            // one used and is allowed to be different in C++ streams but
+            // not COM IStreams
+            if (m_last_op == write)
+            {
+                stream.seekg(stream.tellp());
+                m_last_op = read;
+            }
+            assert(m_last_op == read);
+
+            do_istream_read(stream, buffer, buffer_size_in_bytes, bytes_read_out);
+        }
+
+        void do_write(
+            Stream& stream, const void* buffer,
+            ULONG buffer_size_in_bytes, ULONG& bytes_written_out)
+        {
+            bytes_written_out = 0U;
+
+            // sync writing position with reading position, which was the last
+            // one used and is allowed to be different in C++ streams but
+            // not COM IStreams
+            if (m_last_op == read)
+            {
+                stream.seekp(stream.tellg());
+                m_last_op = write;
+            }
+            assert(m_last_op == write);
+
+            do_ostream_write(
+                stream, buffer, buffer_size_in_bytes, bytes_written_out);
+        }
+
+    private:
+        last_stream_operation m_last_op;
+    };
+
+    /**
+     * Wrap COM IStream interface around C++ IOStream.
+     *
+     * Unlike C++ streams which may have separate read and write positions that
+     * move independently, COM IStreams assume a single combined read/write head.
+     * Therefore this wrapper always starts the next read or write operation
+     * from the where the last operation finished, regardless of whether that
+     * operation was a call to `Read` or `Write`.
+     *
+     * @note This only applies for as long as the read/write positions are
+     *       modified only via this wrapper.  If the positions are modified by
+     *       directly on the underlying IOStream, it is undefined whether the
+     *       starting point for the next call to `Read`/`Write` is syncronised
+     *       with the end of the previous operation.
+     */
     template<typename Stream>
     class adapted_stream : public simple_object<IStream>
     {
@@ -179,7 +282,6 @@ namespace impl {
                     throw com_error("No buffer given", STG_E_INVALIDPOINTER);
                 }
 
-
                 // We use a dummy read count location if one is not given so
                 // that do_read can keep it updated correctly even if
                 // do_read throws an exception.
@@ -189,7 +291,8 @@ namespace impl {
                     read_count_out = &dummy_read_count;
                 }
 
-                do_read(m_stream, buffer, buffer_size, *read_count_out);
+                m_traits.do_read(
+                    m_stream, buffer, buffer_size, *read_count_out);
 
                 if (*read_count_out < buffer_size)
                 {
@@ -228,7 +331,8 @@ namespace impl {
                     written_count_out = &dummy_written_count;
                 }
 
-                do_write(m_stream, buffer, buffer_size, *written_count_out);
+                m_traits.do_write(
+                    m_stream, buffer, buffer_size, *written_count_out);
 
                 if (*written_count_out < buffer_size)
                 {
@@ -376,6 +480,11 @@ namespace impl {
     private:
 
         Stream& m_stream;
+        impl::stream_traits<
+            Stream,
+            type_traits::super_sub_class<std::istream, Stream>::result,
+            type_traits::super_sub_class<std::ostream, Stream>::result
+        > m_traits;
     };
 }
 
