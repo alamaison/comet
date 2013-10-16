@@ -942,4 +942,45 @@ BOOST_AUTO_TEST_CASE( copy_ostream )
     BOOST_CHECK_EQUAL(dest.str(), string());
 }
 
+BOOST_AUTO_TEST_CASE( commit_inout )
+{
+    test_io_stream stl_stream = io_stream("abcd");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    ULONG count = 99;
+    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK_EQUAL(count, 2U);
+
+    check_stream_contains("abcd");
+    BOOST_CHECK_EQUAL(s->Commit(STGC_DEFAULT), S_OK);
+    check_stream_contains("zxcd");
+}
+
+BOOST_AUTO_TEST_CASE( commit_out )
+{
+    test_output_stream stl_stream = output_stream();
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    ULONG count = 99;
+    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK_EQUAL(count, 2U);
+
+    check_stream_contains("");
+    BOOST_CHECK_EQUAL(s->Commit(STGC_DEFAULT), S_OK);
+    check_stream_contains("zx");
+}
+
+BOOST_AUTO_TEST_CASE( commit_in )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    check_stream_contains("gobbeldy gook");
+    BOOST_CHECK_EQUAL(s->Commit(STGC_DEFAULT), STG_E_ACCESSDENIED);
+    check_stream_contains("gobbeldy gook");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

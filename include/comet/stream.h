@@ -409,6 +409,13 @@ namespace impl {
             return pos;
         }
 
+        void do_flush()
+        {
+            throw com_error(
+                "std::istream does not support committing data",
+                STG_E_ACCESSDENIED);
+        }
+
     private:
         stream_traits(const stream_traits&);
         stream_traits& operator=(const stream_traits&);
@@ -461,6 +468,15 @@ namespace impl {
             }
 
             return pos;
+        }
+
+        void do_flush()
+        {
+            if (!m_stream.flush())
+            {
+                throw std::runtime_error(
+                    "Unable to flush buffer to output sequence");
+            }
         }
 
     private:
@@ -596,6 +612,15 @@ namespace impl {
             }
 
             return pos;
+        }
+
+        void do_flush()
+        {
+            if (!m_stream.flush())
+            {
+                throw std::runtime_error(
+                    "Unable to flush buffer to output sequence");
+            }
         }
 
     private:
@@ -905,12 +930,19 @@ namespace impl {
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("CopyTo", "adapted_stream");
         }
 
-        virtual HRESULT STDMETHODCALLTYPE Commit(DWORD commit_flags)
+        /**
+         * Flush data in the buffer to the controlled output sequence.
+         *
+         * This implementation doesn't support transactions so ignores
+         * the commit flags.
+         *
+         * Fails if called with an istream.
+         */
+        virtual HRESULT STDMETHODCALLTYPE Commit(DWORD /*commit_flags*/)
         {
-
             try
             {
-
+                m_traits.do_flush();
                 return S_OK;
             }
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("Commit", "adapted_stream");
@@ -918,11 +950,9 @@ namespace impl {
 
         virtual HRESULT STDMETHODCALLTYPE Revert()
         {
-
             try
             {
-
-                return S_OK;
+                throw com_error("Transactions not supported", E_NOTIMPL);
             }
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("Revert", "adapted_stream");
         }
