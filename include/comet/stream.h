@@ -222,6 +222,45 @@ namespace impl {
         ULARGE_INTEGER& m_new_position_out;
     };
 
+    template<typename StreamTraits>
+    class position_resetter
+    {
+    public:
+        position_resetter(StreamTraits& traits, std::streampos position)
+            :
+        m_traits(traits), m_position(position) {}
+
+        ~position_resetter()
+        {
+            try
+            {
+                ULARGE_INTEGER new_position;
+                m_traits.do_seek(
+                    m_position, std::ios_base::beg, new_position);
+            }
+            catch (const std::exception&)
+            {}
+        }
+
+    private:
+        position_resetter(const position_resetter&);
+        position_resetter& operator=(const position_resetter&);
+
+        StreamTraits& m_traits;
+        std::streampos m_position;
+    };
+
+    template<typename StreamTraits>
+    inline std::streamsize stream_size(StreamTraits& traits)
+    {
+        position_resetter<StreamTraits>(traits, traits.do_tell());
+
+        ULARGE_INTEGER new_position;
+        traits.do_seek(0, std::ios_base::end, new_position);
+
+        return new_position.QuadPart;
+    }
+
     template<typename Stream, bool is_istream, bool is_ostream>
     class stream_traits;
 
@@ -229,15 +268,18 @@ namespace impl {
     class stream_traits<Stream, true, false>
     {
     public:
+        stream_traits(Stream& stream) : m_stream(stream) {}
+
         void do_read(
-            Stream& stream, void* buffer, ULONG buffer_size_in_bytes,
+            void* buffer, ULONG buffer_size_in_bytes,
             ULONG& bytes_read_out)
         {
-            do_istream_read(stream, buffer, buffer_size_in_bytes, bytes_read_out);
+            do_istream_read(
+                m_stream, buffer, buffer_size_in_bytes, bytes_read_out);
         }
 
         void do_write(
-            Stream& /*stream*/, const void* /*buffer*/,
+            const void* /*buffer*/,
             ULONG /*buffer_size_in_bytes*/, ULONG& bytes_written_out)
         {
             bytes_written_out = 0U;
@@ -246,26 +288,44 @@ namespace impl {
         }
 
         void do_seek(
-            Stream& stream, std::streamoff offset, std::ios_base::seekdir way,
+            std::streamoff offset, std::ios_base::seekdir way,
             ULARGE_INTEGER& new_position_out)
         {
             read_position_finaliser<Stream> position_out_updater(
-                stream, new_position_out);
+                m_stream, new_position_out);
 
-            if (!stream.seekg(offset, way))
+            if (!m_stream.seekg(offset, way))
             {
                 throw std::runtime_error("Unable to change read position");
             }
         }
+
+        std::streampos do_tell()
+        {
+            std::streampos pos = m_stream.tellg();
+            if (!m_stream)
+            {
+                throw std::runtime_error("Stream position unavailable");
+            }
+
+            return pos;
+        }
+
+    private:
+        stream_traits(const stream_traits&);
+        stream_traits& operator=(const stream_traits&);
+
+        Stream& m_stream;
     };
 
     template<typename Stream>
     class stream_traits<Stream, false, true>
     {
     public:
+        stream_traits(Stream& stream) : m_stream(stream) {}
 
         void do_read(
-            Stream& /*stream*/, void* /*buffer*/,
+            void* /*buffer*/,
             ULONG /*buffer_size_in_bytes*/, ULONG& bytes_read_out)
         {
             bytes_read_out = 0U;
@@ -274,25 +334,42 @@ namespace impl {
         }
 
         void do_write(
-            Stream& stream, const void* buffer,
+            const void* buffer,
             ULONG buffer_size_in_bytes, ULONG& bytes_written_out)
         {
             do_ostream_write(
-                stream, buffer, buffer_size_in_bytes, bytes_written_out);
+                m_stream, buffer, buffer_size_in_bytes, bytes_written_out);
         }
 
         void do_seek(
-            Stream& stream, std::streamoff offset, std::ios_base::seekdir way,
+            std::streamoff offset, std::ios_base::seekdir way,
             ULARGE_INTEGER& new_position_out)
         {
             write_position_finaliser<Stream> position_out_updater(
-                stream, new_position_out);
+                m_stream, new_position_out);
 
-            if (!stream.seekp(offset, way))
+            if (!m_stream.seekp(offset, way))
             {
                 throw std::runtime_error("Unable to change write position");
             }
         }
+
+        std::streampos do_tell()
+        {
+            std::streampos pos = m_stream.tellp();
+            if (!m_stream)
+            {
+                throw std::runtime_error("Stream position unavailable");
+            }
+
+            return pos;
+        }
+
+    private:
+        stream_traits(const stream_traits&);
+        stream_traits& operator=(const stream_traits&);
+
+        Stream& m_stream;
     };
 
     template<typename Stream>
@@ -307,12 +384,10 @@ namespace impl {
         };
 
     public:
-
-        stream_traits() : m_last_op(read) {}
+        stream_traits(Stream& stream) : m_stream(stream), m_last_op(read) {}
 
         void do_read(
-            Stream& stream, void* buffer, ULONG buffer_size_in_bytes,
-            ULONG& bytes_read_out)
+            void* buffer, ULONG buffer_size_in_bytes, ULONG& bytes_read_out)
         {
             bytes_read_out = 0U;
 
@@ -321,7 +396,7 @@ namespace impl {
             // not COM IStreams
             if (m_last_op == write)
             {
-                stream.seekg(stream.tellp());
+                m_stream.seekg(m_stream.tellp());
                 // We ignore errors syncing the positions as even iostreams may
                 // not be seekable at all
 
@@ -330,12 +405,12 @@ namespace impl {
             assert(m_last_op == read);
 
             do_istream_read(
-                stream, buffer, buffer_size_in_bytes, bytes_read_out);
+                m_stream, buffer, buffer_size_in_bytes, bytes_read_out);
         }
 
         void do_write(
-            Stream& stream, const void* buffer,
-            ULONG buffer_size_in_bytes, ULONG& bytes_written_out)
+            const void* buffer, ULONG buffer_size_in_bytes,
+            ULONG& bytes_written_out)
         {
             bytes_written_out = 0U;
 
@@ -344,7 +419,7 @@ namespace impl {
             // not COM IStreams
             if (m_last_op == read)
             {
-                stream.seekp(stream.tellg());
+                m_stream.seekp(m_stream.tellg());
                 // We ignore errors syncing the positions as even iostreams may
                 // not be seekable at all
 
@@ -353,11 +428,11 @@ namespace impl {
             assert(m_last_op == write);
 
             do_ostream_write(
-                stream, buffer, buffer_size_in_bytes, bytes_written_out);
+                m_stream, buffer, buffer_size_in_bytes, bytes_written_out);
         }
 
         void do_seek(
-            Stream& stream, std::streamoff offset, std::ios_base::seekdir way,
+            std::streamoff offset, std::ios_base::seekdir way,
             ULARGE_INTEGER& new_position_out)
         {
 
@@ -369,15 +444,15 @@ namespace impl {
             if (m_last_op == read)
             {
                 read_position_finaliser<Stream> position_out_updater(
-                    stream, new_position_out);
+                    m_stream, new_position_out);
 
-                if (!stream.seekg(offset, way))
+                if (!m_stream.seekg(offset, way))
                 {
                     throw std::runtime_error("Unable to change read position");
                 }
                 else
                 {
-                    if (!stream.seekp(stream.tellg()))
+                    if (!m_stream.seekp(m_stream.tellg()))
                     {
                         throw std::runtime_error(
                             "Unable to synchronise write position");
@@ -387,15 +462,15 @@ namespace impl {
             else
             {
                 write_position_finaliser<Stream> position_out_updater(
-                    stream, new_position_out);
+                    m_stream, new_position_out);
 
-                if (!stream.seekp(offset, way))
+                if (!m_stream.seekp(offset, way))
                 {
                     throw std::runtime_error("Unable to change write position");
                 }
                 else
                 {
-                    if (!stream.seekg(stream.tellp()))
+                    if (!m_stream.seekg(m_stream.tellp()))
                     {
                         throw std::runtime_error(
                             "Unable to synchronise read position");
@@ -404,7 +479,31 @@ namespace impl {
             }
         }
 
+        std::streampos do_tell()
+        {
+            std::streampos pos;
+            if (m_last_op == read)
+            {
+                pos = m_stream.tellg();
+            }
+            else
+            {
+                pos = m_stream.tellp();
+            }
+
+            if (!m_stream)
+            {
+                throw std::runtime_error("Stream position unavailable");
+            }
+
+            return pos;
+        }
+
     private:
+        stream_traits(const stream_traits&);
+        stream_traits& operator=(const stream_traits&);
+
+        Stream& m_stream;
         last_stream_operation m_last_op;
     };
 
@@ -426,9 +525,17 @@ namespace impl {
     template<typename Stream>
     class adapted_stream : public simple_object<IStream>
     {
+    private:
+
+        typedef impl::stream_traits<
+            Stream,
+            type_traits::super_sub_class<std::istream, Stream>::result,
+            type_traits::super_sub_class<std::ostream, Stream>::result
+        > stream_traits_type;
+
     public:
 
-        adapted_stream(Stream& stream) : m_stream(stream) {}
+        adapted_stream(Stream& stream) : m_stream(stream), m_traits(stream) {}
 
         virtual HRESULT STDMETHODCALLTYPE Read( 
             void* buffer, ULONG buffer_size, ULONG* read_count_out)
@@ -454,8 +561,7 @@ namespace impl {
                     read_count_out = &dummy_read_count;
                 }
 
-                m_traits.do_read(
-                    m_stream, buffer, buffer_size, *read_count_out);
+                m_traits.do_read(buffer, buffer_size, *read_count_out);
 
                 if (*read_count_out < buffer_size)
                 {
@@ -494,8 +600,7 @@ namespace impl {
                     written_count_out = &dummy_written_count;
                 }
 
-                m_traits.do_write(
-                    m_stream, buffer, buffer_size, *written_count_out);
+                m_traits.do_write(buffer, buffer_size, *written_count_out);
 
                 if (*written_count_out < buffer_size)
                 {
@@ -560,7 +665,7 @@ namespace impl {
                     }
 
                     m_traits.do_seek(
-                        m_stream, static_cast<std::streamoff>(offset.QuadPart),
+                        static_cast<std::streamoff>(offset.QuadPart),
                         way, *new_position_out);
 
                     return S_OK;
@@ -569,11 +674,58 @@ namespace impl {
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("Seek", "adapted_stream");
         }
 
+        /**
+         * Expand stream to given size.
+         *
+         * The will only increase a stream's size if it is smaller than the
+         * given size.  If the stream size is already equal or bigger, it
+         * remains unchanged.
+         *
+         * Not all streams support changing size.  In particular, `istream`s
+         * do not support this method.
+         */
         virtual HRESULT STDMETHODCALLTYPE SetSize(ULARGE_INTEGER new_size)
         {
-
             try
             {
+                position_resetter<stream_traits_type> resetter(
+                    m_traits, m_traits.do_tell());
+
+                if (new_size.QuadPart > 0)
+                {
+                    std::streampos existing_size = stream_size(m_traits);
+
+                    if (new_size.QuadPart > existing_size)
+                    {
+                        ULARGE_INTEGER new_end_position;
+                        new_end_position.QuadPart = new_size.QuadPart - 1;
+
+                        if (new_end_position.QuadPart > 
+                            (std::numeric_limits<std::streamoff>::max)())
+                        {
+                            throw com_error(
+                                "Seek offset too large", STG_E_INVALIDFUNCTION);
+                        }
+                        else
+                        {
+                            ULARGE_INTEGER new_position;
+                            m_traits.do_seek(
+                                static_cast<std::streamoff>(
+                                    new_end_position.QuadPart),
+                                std::ios_base::beg, new_position);
+
+                            assert(
+                                new_position.QuadPart ==
+                                new_end_position.QuadPart);
+
+                            // Force the stream to expand by writing NUL at
+                            // new extent
+                            ULONG bytes_written;
+                            m_traits.do_write("\0", 1, bytes_written);
+                            assert(bytes_written == 1);
+                        }
+                    }
+                }
 
                 return S_OK;
             }
@@ -684,11 +836,7 @@ namespace impl {
     private:
 
         Stream& m_stream;
-        impl::stream_traits<
-            Stream,
-            type_traits::super_sub_class<std::istream, Stream>::result,
-            type_traits::super_sub_class<std::ostream, Stream>::result
-        > m_traits;
+        stream_traits_type m_traits;
     };
 }
 

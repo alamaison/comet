@@ -705,4 +705,59 @@ BOOST_AUTO_TEST_CASE( seek_back_from_seek_straight_to_end )
     check_read_to_end(s, string("dy gook"));
 }
 
+BOOST_AUTO_TEST_CASE( set_size_ostream )
+{
+    test_output_stream stl_stream = output_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    // This seek combined with the later read-to-end check that the seek
+    // position is not modified
+    LARGE_INTEGER move = {1};
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, NULL), S_OK);
+
+    ULARGE_INTEGER new_size = {17};
+
+    BOOST_CHECK_EQUAL(s->SetSize(new_size), S_OK);
+
+    stl_stream.flush();
+    check_stream_contains(string("gobbeldy gook\0\0\0\0", 17));
+}
+
+BOOST_AUTO_TEST_CASE( set_size_iostream )
+{
+    test_io_stream stl_stream = io_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    // This seek combined with the later read-to-end check that the seek
+    // position is not modified
+    LARGE_INTEGER move = {1};
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, NULL), S_OK);
+
+    ULARGE_INTEGER new_size = {17};
+
+    BOOST_CHECK_EQUAL(s->SetSize(new_size), S_OK);
+
+    check_read_to_end(s, string("obbeldy gook\0\0\0\0", 16));
+
+    stl_stream.flush();
+    check_stream_contains(string("gobbeldy gook\0\0\0\0", 17));
+}
+
+BOOST_AUTO_TEST_CASE( set_size_istream )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    ULARGE_INTEGER new_size = {17};
+
+    BOOST_CHECK_EQUAL(s->SetSize(new_size), STG_E_ACCESSDENIED);
+
+    check_read_to_end(s, string("gobbeldy gook"));
+
+    check_stream_contains(string("gobbeldy gook"));
+}
+
 BOOST_AUTO_TEST_SUITE_END()
