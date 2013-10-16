@@ -16,6 +16,7 @@
 
 #include <comet/stream.h> // test subject
 
+#include <comet/error.h> // com_error_from_interface
 #include <comet/ptr.h> // com_ptr
 
 #include <cstdio> // tmpnam, remove
@@ -26,8 +27,11 @@
 #include <string>
 #include <vector>
 
+using boost::test_tools::predicate_result;
+
 using comet::adapt_stream;
 using comet::com_ptr;
+using comet::com_error_from_interface;
 
 using std::exception;
 using std::fstream;
@@ -43,6 +47,42 @@ using std::vector;
 
 namespace {
 
+    template<typename Itf>
+    predicate_result has_hresult(
+        HRESULT hr, com_ptr<Itf> iface, HRESULT expected_hr)
+    {
+        if (hr == expected_hr)
+        {
+            return true;
+        }
+        else
+        {
+            predicate_result result = false;
+            result.message() <<
+                "\nWrong error code: " <<
+                std::hex << hr << " != " << expected_hr <<
+                ": " << com_error_from_interface(iface, hr).what();
+            return result;
+        }
+    }
+
+    template<typename Itf>
+    predicate_result is_s_ok(HRESULT hr, com_ptr<Itf> iface)
+    {
+        if (hr == S_OK)
+        {
+            return true;
+        }
+        else
+        {
+            predicate_result result = false;
+            result.message() <<
+                "\nError code not S_OK: (" << std::hex << hr <<
+                ") " << com_error_from_interface(iface, hr).what();
+            return result;
+        }
+    }
+
     template<typename Stream>
     void do_stream_seek_test(
         Stream& stl_stream, DWORD origin, int amount,
@@ -53,7 +93,8 @@ namespace {
         LARGE_INTEGER move = {amount};
         ULARGE_INTEGER new_pos = {42U}; // set to random first
 
-        BOOST_CHECK_EQUAL(s->Seek(move, origin, &new_pos), expected_success);
+        BOOST_CHECK(
+            has_hresult(s->Seek(move, origin, &new_pos), s, expected_success));
         BOOST_CHECK_EQUAL(new_pos.QuadPart, expected_new_pos);
     }
 
@@ -142,7 +183,7 @@ namespace {
             buffer.begin(), buffer.begin() + count,
             expected_valid_bytes.begin(), expected_valid_bytes.end());
 
-        BOOST_CHECK_EQUAL(hr, expected_error_code);
+        BOOST_CHECK(has_hresult(hr, stream, expected_error_code));
     }
 
     template<typename Collection>
@@ -267,8 +308,10 @@ BOOST_AUTO_TEST_CASE( write_to_stl_istream_fails )
 
     vector<char> buffer(16);
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(
-        s->Write(&buffer[0], buffer.size(), &count), STG_E_ACCESSDENIED);
+    BOOST_CHECK(
+        has_hresult(
+            s->Write(&buffer[0], buffer.size(), &count), s,
+            STG_E_ACCESSDENIED));
     BOOST_CHECK_EQUAL(count, 0U);
 
     check_stream_contains("gobbeldy gook");
@@ -284,7 +327,7 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream )
 
     string data("gobbeldy gook");
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Write(&data[0], data.size(), &count), S_OK);
+    BOOST_CHECK(is_s_ok(s->Write(&data[0], data.size(), &count), s));
     BOOST_CHECK_EQUAL(count, data.size());
 
     stl_stream.flush();
@@ -351,8 +394,9 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof )
 
     string data("gobbeldy gook");
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(
-        s->Write(&data[0], data.size(), &count), STG_E_MEDIUMFULL);
+    BOOST_CHECK(
+        has_hresult(
+            s->Write(&data[0], data.size(), &count), s, STG_E_MEDIUMFULL));
     BOOST_CHECK_EQUAL(count, 3U);
 
     BOOST_CHECK_EQUAL(buf.str(), "gob");
@@ -403,7 +447,8 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error )
 
     string data("gobbeldy gook");
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Write(&data[0], data.size(), &count), E_FAIL);
+    BOOST_CHECK(
+        has_hresult(s->Write(&data[0], data.size(), &count), s, E_FAIL));
     BOOST_CHECK_EQUAL(count, 3U);
 
     BOOST_CHECK_EQUAL(buf.str(), "gob");
@@ -423,7 +468,7 @@ BOOST_AUTO_TEST_CASE( read_then_write_stl_stream )
     check_stream_contains(data);
 
     ULONG count;
-    BOOST_CHECK_EQUAL(s->Write("bob", 3, &count), S_OK);
+    BOOST_CHECK(is_s_ok(s->Write("bob", 3, &count), s));
     BOOST_CHECK_EQUAL(count, 3U);
 
     stl_stream.flush();
@@ -438,7 +483,7 @@ BOOST_AUTO_TEST_CASE( write_then_read_stl_stream )
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Write("bob", 3, &count), S_OK);
+    BOOST_CHECK(is_s_ok(s->Write("bob", 3, &count), s));
     BOOST_CHECK_EQUAL(count, 3U);
 
     check_read_results_in(s, data.size(), string("beldy gook"), S_FALSE);
@@ -505,14 +550,15 @@ namespace {
 
         ULARGE_INTEGER new_pos = {42U}; // set to random first
 
-        BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_CUR, &new_pos), S_OK);
+        BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_CUR, &new_pos), s));
         BOOST_CHECK_EQUAL(new_pos.QuadPart, first_hop);
 
         move.QuadPart = second_hop;
 
-        BOOST_CHECK_EQUAL(
-            s->Seek(move, STREAM_SEEK_CUR, &new_pos),
-            expected_final_error_code);
+        BOOST_CHECK(
+            has_hresult(
+                s->Seek(move, STREAM_SEEK_CUR, &new_pos), s,
+                expected_final_error_code));
 
         BOOST_CHECK_EQUAL(new_pos.QuadPart, expected_final_position);
     }
@@ -561,10 +607,27 @@ BOOST_AUTO_TEST_CASE( seek_absolute )
     LARGE_INTEGER move = {6};
     ULARGE_INTEGER new_pos = {42U}; // set to random first
 
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, &new_pos), s));
     BOOST_CHECK_EQUAL(new_pos.QuadPart, 6U);
 
     check_read_to_end(s, string("dy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_absolute_undershoot )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move;
+    move.QuadPart = -1;
+
+    ULARGE_INTEGER new_pos = {42U};
+    BOOST_CHECK(
+        has_hresult(s->Seek(move, STREAM_SEEK_SET, &new_pos), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 0U);
+
+    check_read_to_end(s, string("gobbeldy gook"));
 }
 
 BOOST_AUTO_TEST_CASE( seek_absolute_end )
@@ -577,7 +640,7 @@ BOOST_AUTO_TEST_CASE( seek_absolute_end )
     move.QuadPart = -2;
     ULARGE_INTEGER new_pos = {42U}; // set to random first
 
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_END, &new_pos), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_END, &new_pos), s));
     BOOST_CHECK_EQUAL(new_pos.QuadPart, 11U);
 
     check_read_to_end(s, string("ok"));
@@ -592,7 +655,7 @@ BOOST_AUTO_TEST_CASE( seek_relative_out )
     two_hop_relative_seek(s, 3, 4, S_OK, 7U);
 
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK(is_s_ok(s->Write("zx", 2, &count), s));
     BOOST_CHECK_EQUAL(count, 2U);
 
     stl_stream.flush();
@@ -608,7 +671,7 @@ BOOST_AUTO_TEST_CASE( seek_relative_out_overshoot )
     two_hop_relative_seek(s, 3, 14, S_OK, 17U);
 
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK(is_s_ok(s->Write("zx", 2, &count), s));
     BOOST_CHECK_EQUAL(count, 2U);
 
     stl_stream.flush();
@@ -624,7 +687,7 @@ BOOST_AUTO_TEST_CASE( seek_relative_inout )
     two_hop_relative_seek(s, 3, 4, S_OK, 7U);
 
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK(is_s_ok(s->Write("zx", 2, &count), s));
     BOOST_CHECK_EQUAL(count, 2U);
 
     stl_stream.flush();
@@ -641,7 +704,7 @@ BOOST_AUTO_TEST_CASE( seek_no_newpos )
 
     LARGE_INTEGER move = {6};
 
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, NULL), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, NULL), s));
 
     check_read_to_end(s, string("dy gook"));
 }
@@ -657,7 +720,7 @@ BOOST_AUTO_TEST_CASE( seek_back_from_eof_caused_by_read )
     LARGE_INTEGER move = {6};
 
     ULARGE_INTEGER new_pos = {42U};
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, &new_pos), s));
     BOOST_CHECK_EQUAL(new_pos.QuadPart, 6U);
 
     check_read_to_end(s, string("dy gook"));
@@ -674,13 +737,13 @@ BOOST_AUTO_TEST_CASE( seek_back_from_absolute_seek_to_end )
     LARGE_INTEGER move = {13};
 
     ULARGE_INTEGER new_pos = {42U};
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, &new_pos), s));
     BOOST_CHECK_EQUAL(new_pos.QuadPart, 13U);
 
     move.QuadPart = 6;
 
     new_pos.QuadPart = 42U;
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, &new_pos), s));
     BOOST_CHECK_EQUAL(new_pos.QuadPart, 6U);
 
     check_read_to_end(s, string("dy gook"));
@@ -695,13 +758,13 @@ BOOST_AUTO_TEST_CASE( seek_back_from_seek_straight_to_end )
     LARGE_INTEGER move = {0};
 
     ULARGE_INTEGER new_pos = {42U};
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_END, &new_pos), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_END, &new_pos), s));
     BOOST_CHECK_EQUAL(new_pos.QuadPart, 13U);
 
     move.QuadPart = 6;
 
     new_pos.QuadPart = 42U;
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, &new_pos), s));
     BOOST_CHECK_EQUAL(new_pos.QuadPart, 6U);
 
     check_read_to_end(s, string("dy gook"));
@@ -716,11 +779,11 @@ BOOST_AUTO_TEST_CASE( set_size_ostream )
     // This seek combined with the later read-to-end check that the seek
     // position is not modified
     LARGE_INTEGER move = {1};
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, NULL), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, NULL), s));
 
     ULARGE_INTEGER new_size = {17};
 
-    BOOST_CHECK_EQUAL(s->SetSize(new_size), S_OK);
+    BOOST_CHECK(is_s_ok(s->SetSize(new_size), s));
 
     stl_stream.flush();
     check_stream_contains(string("gobbeldy gook\0\0\0\0", 17));
@@ -735,11 +798,11 @@ BOOST_AUTO_TEST_CASE( set_size_iostream )
     // This seek combined with the later read-to-end check that the seek
     // position is not modified
     LARGE_INTEGER move = {1};
-    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, NULL), S_OK);
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, NULL), s));
 
     ULARGE_INTEGER new_size = {17};
 
-    BOOST_CHECK_EQUAL(s->SetSize(new_size), S_OK);
+    BOOST_CHECK(is_s_ok(s->SetSize(new_size), s));
 
     check_read_to_end(s, string("obbeldy gook\0\0\0\0", 16));
 
@@ -755,7 +818,7 @@ BOOST_AUTO_TEST_CASE( set_size_istream )
 
     ULARGE_INTEGER new_size = {17};
 
-    BOOST_CHECK_EQUAL(s->SetSize(new_size), STG_E_ACCESSDENIED);
+    BOOST_CHECK(has_hresult(s->SetSize(new_size), s, STG_E_ACCESSDENIED));
 
     check_read_to_end(s, string("gobbeldy gook"));
 
@@ -773,8 +836,8 @@ BOOST_AUTO_TEST_CASE( copy_istream_exact )
     ULARGE_INTEGER amount = {13};
     ULARGE_INTEGER bytes_read = {0};
     ULARGE_INTEGER bytes_written = {0};
-    BOOST_CHECK_EQUAL(
-        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
     BOOST_CHECK_EQUAL(bytes_read.QuadPart, 13U);
     BOOST_CHECK_EQUAL(bytes_written.QuadPart, 13U);
 
@@ -796,8 +859,8 @@ BOOST_AUTO_TEST_CASE( copy_istream_under )
     ULARGE_INTEGER amount = {12};
     ULARGE_INTEGER bytes_read = {0};
     ULARGE_INTEGER bytes_written = {0};
-    BOOST_CHECK_EQUAL(
-        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
     BOOST_CHECK_EQUAL(bytes_read.QuadPart, 12U);
     BOOST_CHECK_EQUAL(bytes_written.QuadPart, 12U);
 
@@ -819,8 +882,8 @@ BOOST_AUTO_TEST_CASE( copy_istream_over )
     ULARGE_INTEGER amount = {14};
     ULARGE_INTEGER bytes_read = {0};
     ULARGE_INTEGER bytes_written = {0};
-    BOOST_CHECK_EQUAL(
-        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
     BOOST_CHECK_EQUAL(bytes_read.QuadPart, 13U);
     BOOST_CHECK_EQUAL(bytes_written.QuadPart, 13U);
 
@@ -840,7 +903,7 @@ BOOST_AUTO_TEST_CASE( copy_istream_no_count_vars )
     com_ptr<IStream> d = adapt_stream(dest);
 
     ULARGE_INTEGER amount = {14};
-    BOOST_CHECK_EQUAL(s->CopyTo(d.in(), amount, NULL, NULL), S_OK);
+    BOOST_CHECK(is_s_ok(s->CopyTo(d.in(), amount, NULL, NULL), s));
 
     // must advance the seek pointer so have no more to read
     check_read_to_end(s, string());
@@ -862,8 +925,8 @@ BOOST_AUTO_TEST_CASE( copy_istream_large_exact_multiple )
     ULARGE_INTEGER amount = {size + 1};
     ULARGE_INTEGER bytes_read = {0};
     ULARGE_INTEGER bytes_written = {0};
-    BOOST_CHECK_EQUAL(
-        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
     BOOST_CHECK_EQUAL(bytes_read.QuadPart, size);
     BOOST_CHECK_EQUAL(bytes_written.QuadPart, size);
 
@@ -886,8 +949,8 @@ BOOST_AUTO_TEST_CASE( copy_istream_large_non_exact_multiple )
     ULARGE_INTEGER amount = {size + 1};
     ULARGE_INTEGER bytes_read = {0};
     ULARGE_INTEGER bytes_written = {0};
-    BOOST_CHECK_EQUAL(
-        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
     BOOST_CHECK_EQUAL(bytes_read.QuadPart, size);
     BOOST_CHECK_EQUAL(bytes_written.QuadPart, size);
 
@@ -909,8 +972,8 @@ BOOST_AUTO_TEST_CASE( copy_iostream_exact )
     ULARGE_INTEGER amount = {13};
     ULARGE_INTEGER bytes_read = {0};
     ULARGE_INTEGER bytes_written = {0};
-    BOOST_CHECK_EQUAL(
-        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
     BOOST_CHECK_EQUAL(bytes_read.QuadPart, 13U);
     BOOST_CHECK_EQUAL(bytes_written.QuadPart, 13U);
 
@@ -932,9 +995,10 @@ BOOST_AUTO_TEST_CASE( copy_ostream )
     ULARGE_INTEGER amount = {13};
     ULARGE_INTEGER bytes_read = {0};
     ULARGE_INTEGER bytes_written = {0};
-    BOOST_CHECK_EQUAL(
-        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written),
-        STG_E_ACCESSDENIED);
+    BOOST_CHECK(
+        has_hresult(
+            s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s,
+            STG_E_ACCESSDENIED));
     BOOST_CHECK_EQUAL(bytes_read.QuadPart, 0U);
     BOOST_CHECK_EQUAL(bytes_written.QuadPart, 0U);
 
@@ -949,11 +1013,11 @@ BOOST_AUTO_TEST_CASE( commit_inout )
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK(is_s_ok(s->Write("zx", 2, &count), s));
     BOOST_CHECK_EQUAL(count, 2U);
 
     check_stream_contains("abcd");
-    BOOST_CHECK_EQUAL(s->Commit(STGC_DEFAULT), S_OK);
+    BOOST_CHECK(is_s_ok(s->Commit(STGC_DEFAULT), s));
     check_stream_contains("zxcd");
 }
 
@@ -964,11 +1028,11 @@ BOOST_AUTO_TEST_CASE( commit_out )
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
     ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK(is_s_ok(s->Write("zx", 2, &count), s));
     BOOST_CHECK_EQUAL(count, 2U);
 
     check_stream_contains("");
-    BOOST_CHECK_EQUAL(s->Commit(STGC_DEFAULT), S_OK);
+    BOOST_CHECK(is_s_ok(s->Commit(STGC_DEFAULT), s));
     check_stream_contains("zx");
 }
 
@@ -979,8 +1043,125 @@ BOOST_AUTO_TEST_CASE( commit_in )
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
     check_stream_contains("gobbeldy gook");
-    BOOST_CHECK_EQUAL(s->Commit(STGC_DEFAULT), STG_E_ACCESSDENIED);
+    BOOST_CHECK(has_hresult(s->Commit(STGC_DEFAULT), s, STG_E_ACCESSDENIED));
     check_stream_contains("gobbeldy gook");
+}
+
+// The following A_after_B tests try to verify that failures of the wrapped
+// stream caused by a wrapper method are not visible in the stream state after the
+// method returns and, more importantly, do not affect the result of subsequent
+// calls.
+
+BOOST_AUTO_TEST_CASE( seek_after_failed_seek )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move;
+    move.QuadPart = -1;
+
+    ULARGE_INTEGER new_pos = {42U};
+    BOOST_CHECK(has_hresult(s->Seek(move, STREAM_SEEK_SET, &new_pos), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 0U);
+
+    move.QuadPart = 1;
+
+    new_pos.QuadPart = 42U;
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, &new_pos), s));
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 1U);
+
+    check_read_to_end(s, string("obbeldy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_after_failed_read )
+{
+    test_input_stream stl_stream = input_stream();
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    check_read_to_end(s, string());
+
+    LARGE_INTEGER move = {0};
+    ULARGE_INTEGER new_pos = {42U};
+
+    BOOST_CHECK(is_s_ok(s->Seek(move, STREAM_SEEK_SET, &new_pos), s));
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 0U);
+}
+
+BOOST_AUTO_TEST_CASE( read_after_failed_read )
+{
+    test_input_stream stl_stream = input_stream();
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    check_read_to_end(s, string());
+    check_read_to_end(s, string());
+}
+
+BOOST_AUTO_TEST_CASE( commit_after_failed_read )
+{
+    test_io_stream stl_stream = io_stream();
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    check_read_to_end(s, string());
+
+    BOOST_CHECK(is_s_ok(s->Commit(STGC_DEFAULT), s));
+}
+
+BOOST_AUTO_TEST_CASE( copy_after_failed_read )
+{
+    test_io_stream source = io_stream("gobbeldy gook");
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    check_read_to_end(s, string("gobbeldy gook"));
+
+    ULARGE_INTEGER amount = {13};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, 0U);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, 0U);
+
+    check_read_to_end(s, string());
+
+    check_stream_contains(string("gobbeldy gook"));
+    BOOST_CHECK_EQUAL(dest.str(), string());
+}
+
+BOOST_AUTO_TEST_CASE( copy_after_failed_seek )
+{
+    test_io_stream source = io_stream("gobbeldy gook");
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    LARGE_INTEGER move;
+    move.QuadPart = -1;
+
+    ULARGE_INTEGER new_pos = {42U};
+    BOOST_CHECK(
+        has_hresult(s->Seek(move, STREAM_SEEK_SET, &new_pos), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 0U);
+
+    ULARGE_INTEGER amount = {13};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, 13U);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, 13U);
+
+    check_read_to_end(s, string());
+
+    check_stream_contains(string("gobbeldy gook"));
+    BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy gook"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -36,6 +36,44 @@ namespace impl {
 
     static const size_t COPY_CHUNK_SIZE = 512;
 
+    /**
+     * Used to clear stream failure on exiting a scope.
+     *
+     * Useful when trying an operation and converting any failure to an
+     * exception.  In that case there is no need for the stream object to
+     * also retain evidence of the failure.
+     *
+     * Note, only clears `failbit`.  `eofbit` is left alone as it is a
+     * valid consequence of operations performed by the wrapper.  `badbit` is
+     * also left as these errors are unrecoverable and therefore the
+     * stream is as good as dead; a caller of the unwrapped stream needs
+     * to know that.
+     */
+    template<typename Stream>
+    class stream_failure_cleanser
+    {
+    public:
+        explicit stream_failure_cleanser(Stream& stream)
+            : m_stream(stream)
+        {}
+
+        ~stream_failure_cleanser() throw()
+        {
+            try
+            {
+                m_stream.clear(m_stream.rdstate() & ~std::ios_base::failbit);
+            }
+            catch (const std::exception&)
+            {}
+        }
+
+    private:
+        stream_failure_cleanser(const stream_failure_cleanser&);
+        stream_failure_cleanser& operator=(const stream_failure_cleanser&);
+
+        Stream& m_stream;
+    };
+
     // These do_read/write helper functions dispatch the stream-type specific code
     // so that we only need one class to implement all the stream adapters
 
@@ -645,6 +683,14 @@ namespace impl {
      *       directly on the underlying IOStream, it is undefined whether the
      *       starting point for the next call to `Read`/`Write` is syncronised
      *       with the end of the previous operation.
+     *
+     * If operations on the inner stream results in failure (the `failbit`
+     * is set), this is communicated via the COM-interface return code.  The
+     * `failbit` is cleared before the call returns.  This allows further
+     * wrapper methods to be called without having the clear the bit directly
+     * on the underlying stream.  Fatal errors (`badbit`) and end-of-file
+     * (`eofbit`) are left unchanged and remain visible in the underlying
+     * stream.
      */
     template<typename Stream>
     class adapted_stream : public simple_object<IStream>
@@ -664,6 +710,8 @@ namespace impl {
         virtual HRESULT STDMETHODCALLTYPE Read( 
             void* buffer, ULONG buffer_size, ULONG* read_count_out)
         {
+            impl::stream_failure_cleanser<Stream> state_resetter(m_stream);
+
             if (read_count_out)
             {
                 *read_count_out = 0U;
@@ -671,6 +719,7 @@ namespace impl {
 
             try
             {
+
                 if (!buffer)
                 {
                     throw com_error("No buffer given", STG_E_INVALIDPOINTER);
@@ -703,6 +752,8 @@ namespace impl {
         virtual HRESULT STDMETHODCALLTYPE Write(
             const void* buffer, ULONG buffer_size, ULONG* written_count_out)
         {
+            stream_failure_cleanser<Stream> state_resetter(m_stream);
+
             if (written_count_out)
             {
                 *written_count_out = 0U;
@@ -744,12 +795,15 @@ namespace impl {
             LARGE_INTEGER offset, DWORD origin,
             ULARGE_INTEGER* new_position_out)
         {
+            stream_failure_cleanser<Stream> state_resetter(m_stream);
+
             std::streampos new_stream_position_out = std::streampos();
             impl::position_out_converter out_param_guard(
                 new_stream_position_out, new_position_out);
 
             try
             {
+
                 std::ios_base::seekdir way;
                 if (origin == STREAM_SEEK_CUR)
                 {
@@ -805,6 +859,8 @@ namespace impl {
         {
             try
             {
+                stream_failure_cleanser<Stream> state_resetter(m_stream);
+
                 position_resetter<stream_traits_type> resetter(
                     m_traits, m_traits.do_tell());
 
@@ -853,6 +909,8 @@ namespace impl {
             IStream* destination, ULARGE_INTEGER amount,
             ULARGE_INTEGER* bytes_read_out, ULARGE_INTEGER* bytes_written_out)
         {
+            stream_failure_cleanser<Stream> state_resetter(m_stream);
+
             ULARGE_INTEGER dummy_read_out;
             if (!bytes_read_out)
             {
@@ -869,6 +927,7 @@ namespace impl {
 
             try
             {
+
                 if (!destination)
                 {
                     throw com_error(
@@ -940,6 +999,8 @@ namespace impl {
          */
         virtual HRESULT STDMETHODCALLTYPE Commit(DWORD /*commit_flags*/)
         {
+            stream_failure_cleanser<Stream> state_resetter(m_stream);
+
             try
             {
                 m_traits.do_flush();
