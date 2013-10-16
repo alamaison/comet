@@ -27,6 +27,7 @@
 
 #include <cassert> // assert
 #include <istream>
+#include <limits> // numeric_limits
 #include <ostream>
 
 namespace comet {
@@ -83,6 +84,12 @@ namespace impl {
                 }
             }
         }
+        else if (stream.bad())
+        {
+            // Not catching EOF case here as it seems reasonable that
+            // the sentry might try to read something and reach EOF
+            throw std::runtime_error("Unable to ready stream for reading");
+        }
 
         //return stream.rdbuf()->sgetn(
         //    reinterpret_cast<char*>(buffer),
@@ -134,11 +141,86 @@ namespace impl {
                 }
             }
         }
+        else if (stream.bad())
+        {
+            // Not catching EOF case here as it seems reasonable that
+            // the sentry might try to write something and reach EOF
+            throw std::runtime_error("Unable to ready stream for write");
+        }
 
         //return stream.rdbuf()->sputn(
         //    reinterpret_cast<const char*>(buffer),
         //    buffer_size / sizeof(std::ostream::char_type));
     }
+
+    /** Ensure read position updated even in case of exception */
+    template<typename Stream>
+    class read_position_finaliser
+    {
+    public:
+        read_position_finaliser(
+            Stream& stream, ULARGE_INTEGER& new_position_out)
+            : m_stream(stream), m_new_position_out(new_position_out)
+        {}
+
+        ~read_position_finaliser()
+        {
+            // we still want the read position if previous op failed
+            m_stream.clear();
+
+            std::streampos new_position = m_stream.tellg();
+            if (m_stream)
+            {
+                m_new_position_out.QuadPart = new_position;
+            }
+            else
+            {
+                m_new_position_out.QuadPart = 0U;
+            }
+        }
+
+    private:
+
+        read_position_finaliser(const read_position_finaliser&);
+        read_position_finaliser& operator=(const read_position_finaliser&);
+
+        Stream& m_stream;
+        ULARGE_INTEGER& m_new_position_out;
+    };
+
+    /** Ensure write position updated even in case of exception */
+    template<typename Stream>
+    class write_position_finaliser
+    {
+    public:
+        write_position_finaliser(
+            Stream& stream, ULARGE_INTEGER& new_position_out)
+            : m_stream(stream), m_new_position_out(new_position_out)
+        {}
+
+        ~write_position_finaliser()
+        {
+            // we still want the write position if previous op failed
+            m_stream.clear();
+
+            std::streampos new_position = m_stream.tellp();
+            if (m_stream)
+            {
+                m_new_position_out.QuadPart = new_position;
+            }
+            else
+            {
+                m_new_position_out.QuadPart = 0U;
+            }
+        }
+
+    private:
+        write_position_finaliser(const write_position_finaliser&);
+        write_position_finaliser& operator=(const write_position_finaliser&);
+
+        Stream& m_stream;
+        ULARGE_INTEGER& m_new_position_out;
+    };
 
     template<typename Stream, bool is_istream, bool is_ostream>
     class stream_traits;
@@ -162,6 +244,19 @@ namespace impl {
             throw com_error(
                 "std::istream does not support writing", STG_E_ACCESSDENIED);
         }
+
+        void do_seek(
+            Stream& stream, std::streamoff offset, std::ios_base::seekdir way,
+            ULARGE_INTEGER& new_position_out)
+        {
+            read_position_finaliser<Stream> position_out_updater(
+                stream, new_position_out);
+
+            if (!stream.seekg(offset, way))
+            {
+                throw std::runtime_error("Unable to change read position");
+            }
+        }
     };
 
     template<typename Stream>
@@ -184,6 +279,19 @@ namespace impl {
         {
             do_ostream_write(
                 stream, buffer, buffer_size_in_bytes, bytes_written_out);
+        }
+
+        void do_seek(
+            Stream& stream, std::streamoff offset, std::ios_base::seekdir way,
+            ULARGE_INTEGER& new_position_out)
+        {
+            write_position_finaliser<Stream> position_out_updater(
+                stream, new_position_out);
+
+            if (!stream.seekp(offset, way))
+            {
+                throw std::runtime_error("Unable to change write position");
+            }
         }
     };
 
@@ -214,11 +322,15 @@ namespace impl {
             if (m_last_op == write)
             {
                 stream.seekg(stream.tellp());
+                // We ignore errors syncing the positions as even iostreams may
+                // not be seekable at all
+
                 m_last_op = read;
             }
             assert(m_last_op == read);
 
-            do_istream_read(stream, buffer, buffer_size_in_bytes, bytes_read_out);
+            do_istream_read(
+                stream, buffer, buffer_size_in_bytes, bytes_read_out);
         }
 
         void do_write(
@@ -233,12 +345,63 @@ namespace impl {
             if (m_last_op == read)
             {
                 stream.seekp(stream.tellg());
+                // We ignore errors syncing the positions as even iostreams may
+                // not be seekable at all
+
                 m_last_op = write;
             }
             assert(m_last_op == write);
 
             do_ostream_write(
                 stream, buffer, buffer_size_in_bytes, bytes_written_out);
+        }
+
+        void do_seek(
+            Stream& stream, std::streamoff offset, std::ios_base::seekdir way,
+            ULARGE_INTEGER& new_position_out)
+        {
+
+            // Unlike with do_read/do_write, we do not ignore errors when
+            // trying to sync the read/write positions as, if the
+            // first seek succeeded, we know the stream supports
+            // seeking.  Therefore a later error is really an error.
+
+            if (m_last_op == read)
+            {
+                read_position_finaliser<Stream> position_out_updater(
+                    stream, new_position_out);
+
+                if (!stream.seekg(offset, way))
+                {
+                    throw std::runtime_error("Unable to change read position");
+                }
+                else
+                {
+                    if (!stream.seekp(stream.tellg()))
+                    {
+                        throw std::runtime_error(
+                            "Unable to synchronise write position");
+                    }
+                }
+            }
+            else
+            {
+                write_position_finaliser<Stream> position_out_updater(
+                    stream, new_position_out);
+
+                if (!stream.seekp(offset, way))
+                {
+                    throw std::runtime_error("Unable to change write position");
+                }
+                else
+                {
+                    if (!stream.seekg(stream.tellp()))
+                    {
+                        throw std::runtime_error(
+                            "Unable to synchronise read position");
+                    }
+                }
+            }
         }
 
     private:
@@ -349,18 +512,59 @@ namespace impl {
         }
 
         virtual HRESULT STDMETHODCALLTYPE Seek(
-            LARGE_INTEGER offset, DWORD origin, ULARGE_INTEGER* new_position_out)
+            LARGE_INTEGER offset, DWORD origin,
+            ULARGE_INTEGER* new_position_out)
         {
-
             if (new_position_out)
             {
                 new_position_out->QuadPart = 0U; 
             }
+
             try
             {
+                std::ios_base::seekdir way;
+                if (origin == STREAM_SEEK_CUR)
+                {
+                    way = std::ios_base::cur;
+                }
+                else if (origin == STREAM_SEEK_SET)
+                {
+                    way = std::ios_base::beg;
+                }
+                else if (origin == STREAM_SEEK_END)
+                {
+                    way = std::ios_base::end;
+                }
+                else
+                {
+                    throw std::invalid_argument(
+                        "Unrecognised stream seek origin");
+                }
 
+                if (offset.QuadPart > 
+                    (std::numeric_limits<std::streamoff>::max)())
+                {
+                    throw std::overflow_error("Seek offset too large");
+                }
+                else if (offset.QuadPart <
+                    (std::numeric_limits<std::streamoff>::min)())
+                {
+                    throw std::underflow_error("Seek offset too small");
+                }
+                else
+                {
+                    ULARGE_INTEGER dummy_position_out = {0};
+                    if (!new_position_out)
+                    {
+                        new_position_out = &dummy_position_out;
+                    }
 
-                return S_OK;
+                    m_traits.do_seek(
+                        m_stream, static_cast<std::streamoff>(offset.QuadPart),
+                        way, *new_position_out);
+
+                    return S_OK;
+                }
             }
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("Seek", "adapted_stream");
         }

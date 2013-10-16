@@ -18,7 +18,10 @@
 
 #include <comet/ptr.h> // com_ptr
 
+#include <cstdio> // tmpnam, remove
 #include <exception>
+#include <iterator> // istreambuf_iterator
+#include <fstream>
 #include <sstream> // istringstream, ostringstream, stringstream
 #include <string>
 #include <vector>
@@ -27,82 +30,172 @@ using comet::adapt_stream;
 using comet::com_ptr;
 
 using std::exception;
+using std::fstream;
+using std::ifstream;
 using std::istream;
-using std::istringstream;
+using std::istreambuf_iterator;
+using std::ofstream;
 using std::ostream;
-using std::ostringstream;
 using std::string;
-using std::stringstream;
 using std::vector;
 
-BOOST_AUTO_TEST_SUITE( stream_adapter_tests )
+namespace {
+
+    template<typename Stream>
+    void do_stream_seek_test(
+        Stream& stl_stream, DWORD origin, int amount,
+        HRESULT expected_success, unsigned long long expected_new_pos)
+    {
+        com_ptr<IStream> s = adapt_stream(stl_stream);
+
+        LARGE_INTEGER move = {amount};
+        ULARGE_INTEGER new_pos = {42U}; // set to random first
+
+        BOOST_CHECK_EQUAL(s->Seek(move, origin, &new_pos), expected_success);
+        BOOST_CHECK_EQUAL(new_pos.QuadPart, expected_new_pos);
+    }
+
+    class file_stream_fixture
+    {
+    public:
+
+#pragma warning(push)
+#pragma warning(disable:4996)
+        file_stream_fixture() : m_temp_name(std::tmpnam(NULL)) {}
+#pragma warning(pop)
+
+        ~file_stream_fixture()
+        {
+            std::remove(m_temp_name.c_str());
+        }
+        
+        typedef ifstream test_input_stream;
+        typedef ofstream test_output_stream;
+        typedef fstream test_io_stream;
+
+        test_input_stream input_stream(const string& contents=string())
+        {
+            create_with_contents(contents);
+            return ifstream(m_temp_name.c_str());
+        }
+
+        test_output_stream output_stream(const string& contents=string())
+        {
+            create_with_contents(contents);
+            // specify in to prevent truncating file
+            return ofstream(m_temp_name.c_str(), std::ios_base::in);
+        }
+
+        test_io_stream io_stream(const string& contents=string())
+        {
+            create_with_contents(contents);
+            return fstream(m_temp_name.c_str());
+        }
+
+        void check_stream_contains(const string& contents)
+        {
+            ifstream s(m_temp_name.c_str());
+            BOOST_CHECK_EQUAL_COLLECTIONS(
+                istreambuf_iterator<char>(s), istreambuf_iterator<char>(),
+                contents.begin(), contents.end());
+        }
+
+        void do_empty_stream_seek_test(
+            DWORD origin, int amount, HRESULT expected_success,
+            unsigned long long expected_new_pos=0U)
+        {
+            test_io_stream stl_stream = io_stream();
+            do_stream_seek_test(
+                stl_stream, origin, amount, expected_success,
+                expected_new_pos);
+        }
+
+    private:
+
+        void create_with_contents(const string& contents)
+        {
+            ofstream s(m_temp_name.c_str());
+            if (!contents.empty())
+            {
+                s.write(&contents[0], contents.size());
+            }
+        }
+
+        string m_temp_name;
+    };
+
+    template<typename Collection>
+    void check_read_results_in(
+        com_ptr<IStream> stream, size_t buffer_size,
+        const Collection& expected_valid_bytes, HRESULT expected_error_code)
+    {
+        vector<char> buffer(buffer_size);
+
+        // i.e. not already the expected count before call
+        ULONG count = ((ULONG)expected_valid_bytes.size()) + 99;
+
+        HRESULT hr = stream->Read(&buffer[0], buffer.size(), &count);
+
+        BOOST_CHECK_EQUAL_COLLECTIONS(
+            buffer.begin(), buffer.begin() + count,
+            expected_valid_bytes.begin(), expected_valid_bytes.end());
+
+        BOOST_CHECK_EQUAL(hr, expected_error_code);
+    }
+
+    template<typename Collection>
+    void check_read_to_end(
+        com_ptr<IStream> stream, const Collection& expected_valid_bytes)
+    {
+        // buffer one bigger than expected should trigger S_FALSE if working
+        // correctly
+        check_read_results_in(
+            stream, expected_valid_bytes.size() + 1, expected_valid_bytes,
+            S_FALSE);
+    }
+}
+
+BOOST_FIXTURE_TEST_SUITE( stream_adapter_tests, file_stream_fixture )
 
 BOOST_AUTO_TEST_CASE( read_from_stl_istream_empty )
 {
-    istringstream stl_stream;
+    test_input_stream stl_stream = input_stream();
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    vector<char> buffer(10);
-    ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), S_FALSE);
-    BOOST_CHECK_EQUAL(count, 0U);
-    BOOST_CHECK(stl_stream.str().empty());
+    check_read_results_in(s, 10, string(), S_FALSE);
+    check_stream_contains(string());
 }
 
 BOOST_AUTO_TEST_CASE( read_from_stl_istream_exact )
 {
-    istringstream stl_stream("gobbeldy gook");
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    vector<char> buffer(stl_stream.str().size());
-    ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), S_OK);
-    BOOST_CHECK_EQUAL(count, buffer.size());
+    check_read_results_in(s, 13, string("gobbeldy gook"), S_OK);
 
-    string expected = "gobbeldy gook";
-
-    BOOST_CHECK_EQUAL(stl_stream.str(), expected);
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        buffer.begin(), buffer.end(), expected.begin(), expected.end());
+    check_stream_contains("gobbeldy gook");
 }
 
 BOOST_AUTO_TEST_CASE( read_from_stl_istream_under )
 {
-    istringstream stl_stream("gobbeldy gook");
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    vector<char> buffer(stl_stream.str().size() - 3);
-    ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), S_OK);
-    BOOST_CHECK_EQUAL(count, buffer.size());
-
-    string expected = "gobbeldy gook";
-
-    BOOST_CHECK_EQUAL(stl_stream.str(), expected);
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        buffer.begin(), buffer.end(), expected.begin(), expected.end() - 3);
+    check_read_results_in(s, 10, string("gobbeldy g"), S_OK);
+    check_stream_contains("gobbeldy gook");
 }
 
 BOOST_AUTO_TEST_CASE( read_from_stl_istream_over )
 {
-    istringstream stl_stream("gobbeldy gook");
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    vector<char> buffer(stl_stream.str().size() + 3);
-    ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), S_FALSE);
-    BOOST_CHECK_EQUAL(count, buffer.size() - 3);
-
-    string expected = "gobbeldy gook";
-
-    BOOST_CHECK_EQUAL(stl_stream.str(), expected);
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        buffer.begin(), buffer.begin() + count,
-        expected.begin(), expected.end());
+    check_read_results_in(s, 16, string("gobbeldy gook"), S_FALSE);
+    check_stream_contains("gobbeldy gook");
 }
 
 /**
@@ -161,37 +254,29 @@ BOOST_AUTO_TEST_CASE( read_from_stl_istream_buffer_throws )
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    vector<char> buffer(buf.str().size());
-    ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), E_FAIL);
-    BOOST_CHECK_EQUAL(count, 3U);
-
-    string expected = "gob";
-
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        buffer.begin(), buffer.begin() + count,
-        expected.begin(), expected.end());
+    check_read_results_in(s, 13, string("gob"), E_FAIL);
 }
 
 BOOST_AUTO_TEST_CASE( write_to_stl_istream_fails )
 {
-    istringstream stl_stream("gobbeldy gook");
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    vector<char> buffer(stl_stream.str().size() + 3);
+    vector<char> buffer(16);
     ULONG count = 99;
     BOOST_CHECK_EQUAL(
         s->Write(&buffer[0], buffer.size(), &count), STG_E_ACCESSDENIED);
     BOOST_CHECK_EQUAL(count, 0U);
-    BOOST_CHECK_EQUAL(stl_stream.str(), "gobbeldy gook");
+
+    check_stream_contains("gobbeldy gook");
 }
 
 // IStream write is always exact unless there is an error part way through
 // writing, in which case it may return short
 BOOST_AUTO_TEST_CASE( write_to_stl_ostream )
 {
-    ostringstream stl_stream;
+    test_output_stream stl_stream = output_stream();
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
@@ -200,20 +285,19 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream )
     BOOST_CHECK_EQUAL(s->Write(&data[0], data.size(), &count), S_OK);
     BOOST_CHECK_EQUAL(count, data.size());
 
-    BOOST_CHECK_EQUAL(stl_stream.str(), "gobbeldy gook");
+    stl_stream.flush();
+    check_stream_contains("gobbeldy gook");
 }
 
 BOOST_AUTO_TEST_CASE( read_from_stl_ostream_fails )
 {
-    ostringstream stl_stream;
+    test_output_stream stl_stream = output_stream();
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    vector<char> buffer(10);
-    ULONG count = 99;
-    BOOST_CHECK_EQUAL(
-        s->Read(&buffer[0], buffer.size(), &count), STG_E_ACCESSDENIED);
-    BOOST_CHECK_EQUAL(count, 0U);
+    check_read_results_in(s, 10, vector<char>(), STG_E_ACCESSDENIED);
+
+    check_stream_contains(string());
 }
 
 /**
@@ -326,31 +410,28 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error )
 BOOST_AUTO_TEST_CASE( read_then_write_stl_stream )
 {
     string data = "gobbeldy gook";
-    stringstream stl_stream(data);
+    test_io_stream stl_stream = io_stream(data);
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
     unsigned int hop = 4;
-    vector<char> buffer(hop);
-    ULONG count = 99;
-    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), S_OK);
-    BOOST_CHECK_EQUAL(count, hop);
+    check_read_results_in(s, hop, string("gobb"), S_OK);
 
-    BOOST_CHECK_EQUAL(stl_stream.str(), data);
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        buffer.begin(), buffer.end(), data.begin(), data.begin() + hop);
 
+    check_stream_contains(data);
+
+    ULONG count;
     BOOST_CHECK_EQUAL(s->Write("bob", 3, &count), S_OK);
     BOOST_CHECK_EQUAL(count, 3U);
 
-    string expected = "gobbboby gook";
-    BOOST_CHECK_EQUAL(stl_stream.str(), expected);
+    stl_stream.flush();
+    check_stream_contains("gobbboby gook");
 }
 
 BOOST_AUTO_TEST_CASE( write_then_read_stl_stream )
 {
     string data = "gobbeldy gook";
-    stringstream stl_stream(data);
+    test_io_stream stl_stream = io_stream(data);
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
@@ -358,16 +439,270 @@ BOOST_AUTO_TEST_CASE( write_then_read_stl_stream )
     BOOST_CHECK_EQUAL(s->Write("bob", 3, &count), S_OK);
     BOOST_CHECK_EQUAL(count, 3U);
 
-    vector<char> buffer(data.size());
-    BOOST_CHECK_EQUAL(s->Read(&buffer[0], buffer.size(), &count), S_FALSE);
-    BOOST_CHECK_EQUAL(count, data.size() - 3);
+    check_read_results_in(s, data.size(), string("beldy gook"), S_FALSE);
 
-    string expected = "bobbeldy gook";
-    BOOST_CHECK_EQUAL(stl_stream.str(), expected);
-    BOOST_CHECK_EQUAL_COLLECTIONS(
-        buffer.begin(), buffer.begin() + count,
-        expected.begin() + 3, expected.end());
-    BOOST_CHECK_EQUAL(count, 10U);
+    check_stream_contains("bobbeldy gook");
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_relative )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_CUR, 0, S_OK);
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_relative_undershoot )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_CUR, -1, E_FAIL);
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_relative_overshoot )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_CUR, 1, S_OK, 1);
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_absolute )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_SET, 0, S_OK);
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_absolute_undershoot )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_SET, -1, E_FAIL);
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_absolute_overshoot )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_SET, 1, S_OK, 1);
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_end )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_END, 0, S_OK);
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_end_undershoot )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_END, -1, E_FAIL);
+}
+
+BOOST_AUTO_TEST_CASE( seek_empty_end_overshoot )
+{
+    do_empty_stream_seek_test(STREAM_SEEK_END, 1, S_OK, 1);
+}
+
+namespace {
+
+    // We seek twice to make sure the seek is relative not absolute.  As single
+    // seek relative to 0 is indistinguishable from an absolute seek
+    // Assumes stream is at origin
+    void two_hop_relative_seek(
+        com_ptr<IStream> s, int first_hop, int second_hop,
+        HRESULT expected_final_error_code, unsigned int expected_final_position)
+    {
+        LARGE_INTEGER move;
+        move.QuadPart = first_hop;
+
+        ULARGE_INTEGER new_pos = {42U}; // set to random first
+
+        BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_CUR, &new_pos), S_OK);
+        BOOST_CHECK_EQUAL(new_pos.QuadPart, first_hop);
+
+        move.QuadPart = second_hop;
+
+        BOOST_CHECK_EQUAL(
+            s->Seek(move, STREAM_SEEK_CUR, &new_pos),
+            expected_final_error_code);
+
+        BOOST_CHECK_EQUAL(new_pos.QuadPart, expected_final_position);
+    }
+
+}
+
+BOOST_AUTO_TEST_CASE( seek_relative )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    two_hop_relative_seek(s, 3, 4, S_OK, 7U);
+
+    check_read_to_end(s, string("y gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_relative_undershoot )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    two_hop_relative_seek(s, 3, -4, E_FAIL, 3U);
+
+    check_read_to_end(s, string("beldy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_relative_overshoot )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    two_hop_relative_seek(s, 3, 40, S_OK, 43U);
+
+    check_read_results_in(s, 1, string(), S_FALSE);
+}
+
+BOOST_AUTO_TEST_CASE( seek_absolute )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {6};
+    ULARGE_INTEGER new_pos = {42U}; // set to random first
+
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 6U);
+
+    check_read_to_end(s, string("dy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_absolute_end )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move;
+    move.QuadPart = -2;
+    ULARGE_INTEGER new_pos = {42U}; // set to random first
+
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_END, &new_pos), S_OK);
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 11U);
+
+    check_read_to_end(s, string("ok"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_relative_out )
+{
+    test_output_stream stl_stream = output_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    two_hop_relative_seek(s, 3, 4, S_OK, 7U);
+
+    ULONG count = 99;
+    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK_EQUAL(count, 2U);
+
+    stl_stream.flush();
+    check_stream_contains("gobbeldzxgook");
+}
+
+BOOST_AUTO_TEST_CASE( seek_relative_out_overshoot )
+{
+    test_output_stream stl_stream = output_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    two_hop_relative_seek(s, 3, 14, S_OK, 17U);
+
+    ULONG count = 99;
+    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK_EQUAL(count, 2U);
+
+    stl_stream.flush();
+    check_stream_contains(string("gobbeldy gook\0\0\0\0zx", 19));
+}
+
+BOOST_AUTO_TEST_CASE( seek_relative_inout )
+{
+    test_io_stream stl_stream = io_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    two_hop_relative_seek(s, 3, 4, S_OK, 7U);
+
+    ULONG count = 99;
+    BOOST_CHECK_EQUAL(s->Write("zx", 2, &count), S_OK);
+    BOOST_CHECK_EQUAL(count, 2U);
+
+    stl_stream.flush();
+    check_stream_contains("gobbeldzxgook");
+
+    check_read_to_end(s, string("gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_no_newpos )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {6};
+
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, NULL), S_OK);
+
+    check_read_to_end(s, string("dy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_back_from_eof_caused_by_read )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    check_read_to_end(s, string("gobbeldy gook"));
+
+    LARGE_INTEGER move = {6};
+
+    ULARGE_INTEGER new_pos = {42U};
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 6U);
+
+    check_read_to_end(s, string("dy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_back_from_absolute_seek_to_end )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    check_read_to_end(s, string("gobbeldy gook"));
+
+    LARGE_INTEGER move = {13};
+
+    ULARGE_INTEGER new_pos = {42U};
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 13U);
+
+    move.QuadPart = 6;
+
+    new_pos.QuadPart = 42U;
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 6U);
+
+    check_read_to_end(s, string("dy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( seek_back_from_seek_straight_to_end )
+{
+    test_input_stream stl_stream = input_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {0};
+
+    ULARGE_INTEGER new_pos = {42U};
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_END, &new_pos), S_OK);
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 13U);
+
+    move.QuadPart = 6;
+
+    new_pos.QuadPart = 42U;
+    BOOST_CHECK_EQUAL(s->Seek(move, STREAM_SEEK_SET, &new_pos), S_OK);
+    BOOST_CHECK_EQUAL(new_pos.QuadPart, 6U);
+
+    check_read_to_end(s, string("dy gook"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
