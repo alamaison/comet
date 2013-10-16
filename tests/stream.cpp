@@ -18,6 +18,7 @@
 
 #include <comet/error.h> // com_error_from_interface
 #include <comet/ptr.h> // com_ptr
+#include <comet/bstr.h> // bstr_t
 
 #include <cstdio> // tmpnam, remove
 #include <exception>
@@ -30,6 +31,8 @@
 using boost::test_tools::predicate_result;
 
 using comet::adapt_stream;
+using comet::auto_attach;
+using comet::bstr_t;
 using comet::com_ptr;
 using comet::com_error_from_interface;
 
@@ -1162,6 +1165,66 @@ BOOST_AUTO_TEST_CASE( copy_after_failed_seek )
 
     check_stream_contains(string("gobbeldy gook"));
     BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( stat_request_name_has_no_name )
+{
+    test_io_stream source = io_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(source);
+
+    STATSTG stg = STATSTG();
+    BOOST_REQUIRE(is_s_ok(s->Stat(&stg, STATFLAG_DEFAULT), s));
+    bstr_t name(auto_attach(stg.pwcsName));
+
+    BOOST_CHECK(name.empty());
+
+    BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
+    BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));
+}
+
+BOOST_AUTO_TEST_CASE( stat_request_name_has_name )
+{
+    test_io_stream source = io_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(source, L"clever trevor");
+
+    STATSTG stg = STATSTG();
+    BOOST_REQUIRE(is_s_ok(s->Stat(&stg, STATFLAG_DEFAULT), s));
+    bstr_t name(auto_attach(stg.pwcsName));
+
+    BOOST_CHECK_EQUAL(name, L"clever trevor");
+
+    BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
+    BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));
+}
+
+BOOST_AUTO_TEST_CASE( stat_no_request_name_has_no_name )
+{
+    test_io_stream source = io_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(source);
+
+    STATSTG stg = STATSTG();
+    BOOST_REQUIRE(is_s_ok(s->Stat(&stg, STATFLAG_NONAME), s));
+    BOOST_CHECK(!stg.pwcsName);
+
+    BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
+    BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));
+}
+
+BOOST_AUTO_TEST_CASE( stat_no_request_name_has_name )
+{
+    test_io_stream source = io_stream("gobbeldy gook");
+
+    com_ptr<IStream> s = adapt_stream(source, L"clever trevor");
+
+    STATSTG stg = STATSTG();
+    BOOST_REQUIRE(is_s_ok(s->Stat(&stg, STATFLAG_NONAME), s));
+    BOOST_CHECK(!stg.pwcsName);
+
+    BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
+    BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

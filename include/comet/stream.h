@@ -21,6 +21,7 @@
 
 #include <comet/config.h>
 
+#include <comet/bstr.h> // bstr_t
 #include <comet/error.h> // com_error
 #include <comet/handle_except.h> // COMET_CATCH_CLASS_INTERFACE_BOUNDARY
 #include <comet/server.h> // simple_object
@@ -705,7 +706,9 @@ namespace impl {
 
     public:
 
-        adapted_stream(Stream& stream) : m_stream(stream), m_traits(stream) {}
+        adapted_stream(Stream& stream, const bstr_t& optional_name)
+            : m_stream(stream), m_traits(stream),
+            m_optional_name(optional_name) {}
 
         virtual HRESULT STDMETHODCALLTYPE Read( 
             void* buffer, ULONG buffer_size, ULONG* read_count_out)
@@ -1045,9 +1048,37 @@ namespace impl {
         virtual HRESULT STDMETHODCALLTYPE Stat( 
             STATSTG* attributes_out, DWORD stat_flag)
         {
-
             try
             {
+                if (!attributes_out)
+                {
+                    throw com_error("STATSTG not given", STG_E_INVALIDPOINTER);
+                }
+
+                *attributes_out = STATSTG();
+
+                attributes_out->type = STGTY_STREAM;
+                
+                try
+                {
+                    attributes_out->cbSize.QuadPart =
+                        impl::stream_size(m_traits);
+                }
+                catch (const std::exception&)
+                {
+                    // Swallow non-bad errors as many stream are not seekable and
+                    // therefore not sizeable
+                    if (m_stream.bad())
+                        throw;
+                }
+
+                // Must be last as, after we detach, any failure will leak
+                // memory
+                if (!(stat_flag & STATFLAG_NONAME))
+                {
+                    bstr_t name_copy = m_optional_name;
+                    attributes_out->pwcsName = name_copy.detach();
+                }
 
                 return S_OK;
             }
@@ -1073,13 +1104,15 @@ namespace impl {
 
         Stream& m_stream;
         stream_traits_type m_traits;
+        bstr_t m_optional_name;
     };
 }
 
 template<typename Stream>
-inline com_ptr<IStream> adapt_stream(Stream& stream)
+inline com_ptr<IStream> adapt_stream(
+    Stream& stream, const bstr_t& optional_name=bstr_t())
 {
-    return new impl::adapted_stream<Stream>(stream);
+    return new impl::adapted_stream<Stream>(stream, optional_name);
 }
 
 }
