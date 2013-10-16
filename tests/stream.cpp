@@ -34,8 +34,10 @@ using std::fstream;
 using std::ifstream;
 using std::istream;
 using std::istreambuf_iterator;
+using std::istringstream;
 using std::ofstream;
 using std::ostream;
+using std::ostringstream;
 using std::string;
 using std::vector;
 
@@ -758,6 +760,168 @@ BOOST_AUTO_TEST_CASE( set_size_istream )
     check_read_to_end(s, string("gobbeldy gook"));
 
     check_stream_contains(string("gobbeldy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( copy_istream_exact )
+{
+    test_input_stream source = input_stream("gobbeldy gook");
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount = {13};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK_EQUAL(
+        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, 13U);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, 13U);
+
+    // must advance the seek pointer so have no more to read
+    check_read_to_end(s, string());
+
+    check_stream_contains(string("gobbeldy gook"));
+    BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( copy_istream_under )
+{
+    test_input_stream source = input_stream("gobbeldy gook");
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount = {12};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK_EQUAL(
+        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, 12U);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, 12U);
+
+    // must advance the seek pointer so have just one byte more to read
+    check_read_to_end(s, string("k"));
+
+    check_stream_contains(string("gobbeldy gook"));
+    BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy goo"));
+}
+
+BOOST_AUTO_TEST_CASE( copy_istream_over )
+{
+    test_input_stream source = input_stream("gobbeldy gook");
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount = {14};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK_EQUAL(
+        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, 13U);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, 13U);
+
+    // must advance the seek pointer so have no more to read
+    check_read_to_end(s, string());
+
+    check_stream_contains(string("gobbeldy gook"));
+    BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( copy_istream_large_exact_multiple )
+{
+    // tests an exact multiple of goes round the copy chunk
+    size_t size = 2048;
+    test_input_stream source = input_stream(string(size, 'g'));
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount = {size + 1};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK_EQUAL(
+        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, size);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, size);
+
+    // must advance the seek pointer so have no more to read
+    check_read_to_end(s, string());
+
+    check_stream_contains(string(size, 'g'));
+    BOOST_CHECK_EQUAL(dest.str(), string(size, 'g'));
+}
+
+BOOST_AUTO_TEST_CASE( copy_istream_large_non_exact_multiple )
+{
+    size_t size = 2049;
+    test_input_stream source = input_stream(string(size, 'g'));
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount = {size + 1};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK_EQUAL(
+        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, size);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, size);
+
+    // must advance the seek pointer so have no more to read
+    check_read_to_end(s, string());
+
+    check_stream_contains(string(size, 'g'));
+    BOOST_CHECK_EQUAL(dest.str(), string(size, 'g'));
+}
+
+BOOST_AUTO_TEST_CASE( copy_iostream_exact )
+{
+    test_io_stream source = io_stream("gobbeldy gook");
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount = {13};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK_EQUAL(
+        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), S_OK);
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, 13U);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, 13U);
+
+    // must advance the seek pointer so have no more to read
+    check_read_to_end(s, string());
+
+    check_stream_contains(string("gobbeldy gook"));
+    BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( copy_ostream )
+{
+    test_output_stream source = output_stream("gobbeldy gook");
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount = {13};
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK_EQUAL(
+        s->CopyTo(d.in(), amount, &bytes_read, &bytes_written),
+        STG_E_ACCESSDENIED);
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, 0U);
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, 0U);
+
+    check_stream_contains(string("gobbeldy gook"));
+    BOOST_CHECK_EQUAL(dest.str(), string());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

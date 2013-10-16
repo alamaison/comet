@@ -34,6 +34,8 @@ namespace comet {
 
 namespace impl {
 
+    static const size_t COPY_CHUNK_SIZE = 512;
+
     // These do_read/write helper functions dispatch the stream-type specific code
     // so that we only need one class to implement all the stream adapters
 
@@ -794,26 +796,77 @@ namespace impl {
 
         virtual HRESULT STDMETHODCALLTYPE CopyTo( 
             IStream* destination, ULARGE_INTEGER amount,
-            ULARGE_INTEGER* read_count_out, ULARGE_INTEGER* written_count_out)
+            ULARGE_INTEGER* bytes_read_out, ULARGE_INTEGER* bytes_written_out)
         {
-            if (read_count_out)
+            if (bytes_read_out)
             {
-                read_count_out->QuadPart = 0U;
+                bytes_read_out->QuadPart = 0U;
             }
 
-            if (written_count_out)
+            if (bytes_written_out)
             {
-                written_count_out->QuadPart = 0U;
+                bytes_written_out->QuadPart = 0U;
             }
 
             try
             {
-
                 if (!destination)
                 {
                     throw com_error(
                         "Destination stream not given", STG_E_INVALIDPOINTER);
                 }
+
+                std::vector<unsigned char> buffer(COPY_CHUNK_SIZE);
+
+                // Perform copy operation in chunks COPY_CHUNK bytes big
+                // The chunk must be less than the biggest ULONG in size
+                // because of the limits of the Read/Write API.  Of course
+                // it will be in any case as it would be insane to use more
+                // memory than that, but we make sure anyway using the first
+                // min comparison
+                do {
+                    ULONG next_chunk_size =
+                        static_cast<ULONG>(
+                            min(
+                                (std::numeric_limits<ULONG>::max)(),
+                                min(
+                                    amount.QuadPart - bytes_read_out->QuadPart,
+                                    buffer.size())));
+
+                    ULONG read_this_round = 0U;
+                    ULONG written_this_round = 0U;
+
+                    try
+                    {
+                        m_traits.do_read(
+                            &buffer[0], next_chunk_size, read_this_round);
+                        HRESULT hr = destination->Write(
+                            &buffer[0], read_this_round, &written_this_round);
+                        if (FAILED(hr))
+                        {
+                            com_error_from_interface(destination, hr);
+                        }
+
+                        bytes_read_out->QuadPart += read_this_round;
+                        bytes_written_out->QuadPart += written_this_round;
+                    }
+                    catch(...)
+                    {
+                        // The counts must be updated even in the failure case
+                        // Well, MSDN says they don't have to be but,
+                        // as we can, we might as well
+                        bytes_read_out->QuadPart += read_this_round;
+                        bytes_written_out->QuadPart += written_this_round;
+                        throw;
+                    }
+
+                    if (read_this_round < next_chunk_size)
+                    {
+                        // EOF
+                        break;
+                    }
+
+                } while (amount.QuadPart > bytes_read_out->QuadPart);
 
                 return S_OK;
             }
