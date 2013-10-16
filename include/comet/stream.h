@@ -1045,6 +1045,16 @@ namespace impl {
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("UnlockRegion", "adapted_stream");
         }
 
+        /**
+         * Get some metadata about the stream.
+         *
+         * The name returned (if requested) is the name optionally given
+         * in the constructor.  If not given in the constructor, an
+         * empty string is returned.
+         *
+         * Some fields, such as the date fields, are not valid as that data
+         * is not available for IOStreams.
+         */
         virtual HRESULT STDMETHODCALLTYPE Stat( 
             STATSTG* attributes_out, DWORD stat_flag)
         {
@@ -1085,7 +1095,10 @@ namespace impl {
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("Stat", "adapted_stream");
         }
 
-        virtual HRESULT STDMETHODCALLTYPE Clone(IStream **stream_out)
+        /**
+         * Cloning not supported for IOStreams as they are not copyable.
+         */
+        virtual HRESULT STDMETHODCALLTYPE Clone(IStream** stream_out)
         {
             if (stream_out)
             {
@@ -1094,8 +1107,8 @@ namespace impl {
 
             try
             {
-
-                return S_OK;
+                throw com_error(
+                    "Cloning not supported", STG_E_INVALIDFUNCTION);
             }
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("Clone", "adapted_stream");
         }
