@@ -159,7 +159,7 @@ namespace impl {
     {
     public:
         read_position_finaliser(
-            Stream& stream, ULARGE_INTEGER& new_position_out)
+            Stream& stream, std::streampos& new_position_out)
             : m_stream(stream), m_new_position_out(new_position_out)
         {}
 
@@ -171,11 +171,11 @@ namespace impl {
             std::streampos new_position = m_stream.tellg();
             if (m_stream)
             {
-                m_new_position_out.QuadPart = new_position;
+                m_new_position_out = new_position;
             }
             else
             {
-                m_new_position_out.QuadPart = 0U;
+                m_new_position_out = std::streampos();
             }
         }
 
@@ -185,7 +185,7 @@ namespace impl {
         read_position_finaliser& operator=(const read_position_finaliser&);
 
         Stream& m_stream;
-        ULARGE_INTEGER& m_new_position_out;
+        std::streampos& m_new_position_out;
     };
 
     /** Ensure write position updated even in case of exception */
@@ -194,7 +194,7 @@ namespace impl {
     {
     public:
         write_position_finaliser(
-            Stream& stream, ULARGE_INTEGER& new_position_out)
+            Stream& stream, std::streampos& new_position_out)
             : m_stream(stream), m_new_position_out(new_position_out)
         {}
 
@@ -206,11 +206,11 @@ namespace impl {
             std::streampos new_position = m_stream.tellp();
             if (m_stream)
             {
-                m_new_position_out.QuadPart = new_position;
+                m_new_position_out = new_position;
             }
             else
             {
-                m_new_position_out.QuadPart = 0U;
+                m_new_position_out = std::streampos();
             }
         }
 
@@ -219,7 +219,68 @@ namespace impl {
         write_position_finaliser& operator=(const write_position_finaliser&);
 
         Stream& m_stream;
-        ULARGE_INTEGER& m_new_position_out;
+        std::streampos& m_new_position_out;
+    };
+
+    /**
+     * Copies `streampos` out-parameter to ULARGE_INTEGER out parameter
+     * in the face of exceptions.
+     *
+     * Using this class means you can concentrate on keeping the `streampos`
+     * variable updated, confident in the knowledge the the COM-interface
+     * ULARGE_INTEGER parameter will eventually be updated to match it,
+     * no matter what.
+     *
+     * Assumes that the source out parameter is guaranteed to be valid at
+     * all times.  Valid doesn't necessarily mean correct but that it always
+     * contains the value we want to set the out parameter to, even if that is
+     * wrong (for instance failure while calculating correct position).
+     */
+    class position_out_converter
+    {
+    public:
+
+        position_out_converter(
+            std::streampos& source_out_parameter,
+            ULARGE_INTEGER* destination_out_parameter)
+            :
+        m_source(source_out_parameter),
+        m_destination(destination_out_parameter) {}
+
+        ~position_out_converter()
+        {
+            if (m_destination)
+            {
+                try
+                {
+                    // Convert to streamoff because streampos may not
+                    // be an integer.  streamoff is guaranteed to be.
+                    std::streamoff offset_from_beginning = m_source;
+                    if (offset_from_beginning < 0)
+                    {
+                        assert(!"negative offset from beginning?! screwed.");
+                        m_destination->QuadPart = 0U;
+                    }
+                    else
+                    {
+                        m_destination->QuadPart = offset_from_beginning;
+                    }
+                }
+                catch(const std::exception&)
+                {
+                    // Only way this can happen is if streampos refuses to
+                    // convert to streamoff in which case we really are screwed.
+                    m_destination->QuadPart = 0U;
+                }
+            }
+        }
+
+    private:
+        position_out_converter(const position_out_converter&);
+        position_out_converter& operator=(const position_out_converter&);
+
+        std::streampos& m_source;
+        ULARGE_INTEGER* m_destination;
     };
 
     template<typename StreamTraits>
@@ -234,9 +295,11 @@ namespace impl {
         {
             try
             {
-                ULARGE_INTEGER new_position;
+                std::streampos new_position;
                 m_traits.do_seek(
                     m_position, std::ios_base::beg, new_position);
+
+                assert(new_position == m_position);
             }
             catch (const std::exception&)
             {}
@@ -250,15 +313,18 @@ namespace impl {
         std::streampos m_position;
     };
 
+    /**
+     * Calculate offset of end of stream from start.
+     */
     template<typename StreamTraits>
-    inline std::streamsize stream_size(StreamTraits& traits)
+    inline std::streamoff stream_size(StreamTraits& traits)
     {
         position_resetter<StreamTraits>(traits, traits.do_tell());
 
-        ULARGE_INTEGER new_position;
+        std::streampos new_position;
         traits.do_seek(0, std::ios_base::end, new_position);
 
-        return new_position.QuadPart;
+        return new_position;
     }
 
     template<typename Stream, bool is_istream, bool is_ostream>
@@ -268,7 +334,7 @@ namespace impl {
     class stream_traits<Stream, true, false>
     {
     public:
-        stream_traits(Stream& stream) : m_stream(stream) {}
+        explicit stream_traits(Stream& stream) : m_stream(stream) {}
 
         void do_read(
             void* buffer, ULONG buffer_size_in_bytes,
@@ -289,7 +355,7 @@ namespace impl {
 
         void do_seek(
             std::streamoff offset, std::ios_base::seekdir way,
-            ULARGE_INTEGER& new_position_out)
+            std::streampos& new_position_out)
         {
             read_position_finaliser<Stream> position_out_updater(
                 m_stream, new_position_out);
@@ -322,7 +388,7 @@ namespace impl {
     class stream_traits<Stream, false, true>
     {
     public:
-        stream_traits(Stream& stream) : m_stream(stream) {}
+        explicit stream_traits(Stream& stream) : m_stream(stream) {}
 
         void do_read(
             void* /*buffer*/,
@@ -343,7 +409,7 @@ namespace impl {
 
         void do_seek(
             std::streamoff offset, std::ios_base::seekdir way,
-            ULARGE_INTEGER& new_position_out)
+            std::streampos& new_position_out)
         {
             write_position_finaliser<Stream> position_out_updater(
                 m_stream, new_position_out);
@@ -384,7 +450,8 @@ namespace impl {
         };
 
     public:
-        stream_traits(Stream& stream) : m_stream(stream), m_last_op(read) {}
+        explicit stream_traits(Stream& stream)
+            : m_stream(stream), m_last_op(read) {}
 
         void do_read(
             void* buffer, ULONG buffer_size_in_bytes, ULONG& bytes_read_out)
@@ -433,7 +500,7 @@ namespace impl {
 
         void do_seek(
             std::streamoff offset, std::ios_base::seekdir way,
-            ULARGE_INTEGER& new_position_out)
+            std::streampos& new_position_out)
         {
 
             // Unlike with do_read/do_write, we do not ignore errors when
@@ -620,10 +687,9 @@ namespace impl {
             LARGE_INTEGER offset, DWORD origin,
             ULARGE_INTEGER* new_position_out)
         {
-            if (new_position_out)
-            {
-                new_position_out->QuadPart = 0U; 
-            }
+            std::streampos new_stream_position_out = std::streampos();
+            impl::position_out_converter out_param_guard(
+                new_stream_position_out, new_position_out);
 
             try
             {
@@ -658,15 +724,9 @@ namespace impl {
                 }
                 else
                 {
-                    ULARGE_INTEGER dummy_position_out = {0};
-                    if (!new_position_out)
-                    {
-                        new_position_out = &dummy_position_out;
-                    }
-
                     m_traits.do_seek(
                         static_cast<std::streamoff>(offset.QuadPart),
-                        way, *new_position_out);
+                        way, new_stream_position_out);
 
                     return S_OK;
                 }
@@ -693,37 +753,37 @@ namespace impl {
 
                 if (new_size.QuadPart > 0)
                 {
-                    std::streampos existing_size = stream_size(m_traits);
+                    ULARGE_INTEGER new_end_position;
+                    new_end_position.QuadPart = new_size.QuadPart - 1;
 
-                    if (new_size.QuadPart > existing_size)
+                    std::streamoff new_offset;
+                    if (new_end_position.QuadPart > 
+                        (std::numeric_limits<std::streamoff>::max)())
                     {
-                        ULARGE_INTEGER new_end_position;
-                        new_end_position.QuadPart = new_size.QuadPart - 1;
+                        throw com_error(
+                            "Seek offset too large", STG_E_INVALIDFUNCTION);
+                    }
+                    else
+                    {
+                        new_offset = static_cast<std::streamoff>(
+                            new_end_position.QuadPart);
+                    }
 
-                        if (new_end_position.QuadPart > 
-                            (std::numeric_limits<std::streamoff>::max)())
-                        {
-                            throw com_error(
-                                "Seek offset too large", STG_E_INVALIDFUNCTION);
-                        }
-                        else
-                        {
-                            ULARGE_INTEGER new_position;
-                            m_traits.do_seek(
-                                static_cast<std::streamoff>(
-                                    new_end_position.QuadPart),
-                                std::ios_base::beg, new_position);
+                    std::streamoff existing_end = stream_size(m_traits);
 
-                            assert(
-                                new_position.QuadPart ==
-                                new_end_position.QuadPart);
+                    if (new_offset > existing_end)
+                    {
+                        std::streampos new_position;
+                        m_traits.do_seek(
+                            new_offset, std::ios_base::beg, new_position);
 
-                            // Force the stream to expand by writing NUL at
-                            // new extent
-                            ULONG bytes_written;
-                            m_traits.do_write("\0", 1, bytes_written);
-                            assert(bytes_written == 1);
-                        }
+                        assert(std::streamoff(new_position) == new_offset);
+
+                        // Force the stream to expand by writing NUL at
+                        // new extent
+                        ULONG bytes_written;
+                        m_traits.do_write("\0", 1, bytes_written);
+                        assert(bytes_written == 1);
                     }
                 }
 
