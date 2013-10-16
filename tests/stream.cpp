@@ -831,6 +831,24 @@ BOOST_AUTO_TEST_CASE( copy_istream_over )
     BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy gook"));
 }
 
+BOOST_AUTO_TEST_CASE( copy_istream_no_count_vars )
+{
+    test_input_stream source = input_stream("gobbeldy gook");
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount = {14};
+    BOOST_CHECK_EQUAL(s->CopyTo(d.in(), amount, NULL, NULL), S_OK);
+
+    // must advance the seek pointer so have no more to read
+    check_read_to_end(s, string());
+
+    check_stream_contains(string("gobbeldy gook"));
+    BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy gook"));
+}
+
 BOOST_AUTO_TEST_CASE( copy_istream_large_exact_multiple )
 {
     // tests an exact multiple of goes round the copy chunk

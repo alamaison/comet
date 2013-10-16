@@ -285,6 +285,36 @@ namespace impl {
         ULARGE_INTEGER* m_destination;
     };
 
+    /**
+     * Increments a total counter with an increment are end of scope,
+     * regardless of how that scope is ended.
+     *
+     * Assumes the increment parameter is valid at all times.
+     */
+    class byte_count_incrementer
+    {
+    public:
+        byte_count_incrementer(
+            ULARGE_INTEGER* total, ULONG& increment)
+            : m_total(total), m_increment(increment) {}
+
+        ~byte_count_incrementer()
+        {
+            if (m_total)
+            {
+                m_total->QuadPart += m_increment;
+            }
+        }
+
+    private:
+
+        byte_count_incrementer(const byte_count_incrementer&);
+        byte_count_incrementer& operator=(const byte_count_incrementer&);
+
+        ULARGE_INTEGER* m_total;
+        ULONG& m_increment;
+    };
+
     template<typename StreamTraits>
     class position_resetter
     {
@@ -798,15 +828,19 @@ namespace impl {
             IStream* destination, ULARGE_INTEGER amount,
             ULARGE_INTEGER* bytes_read_out, ULARGE_INTEGER* bytes_written_out)
         {
-            if (bytes_read_out)
+            ULARGE_INTEGER dummy_read_out;
+            if (!bytes_read_out)
             {
-                bytes_read_out->QuadPart = 0U;
+                bytes_read_out = &dummy_read_out;
             }
+            bytes_read_out->QuadPart = 0U;
 
-            if (bytes_written_out)
+            ULARGE_INTEGER dummy_written_out;
+            if (!bytes_written_out)
             {
-                bytes_written_out->QuadPart = 0U;
+                bytes_written_out = &dummy_written_out;
             }
+            bytes_written_out->QuadPart = 0U;
 
             try
             {
@@ -836,28 +870,26 @@ namespace impl {
                     ULONG read_this_round = 0U;
                     ULONG written_this_round = 0U;
 
-                    try
-                    {
-                        m_traits.do_read(
-                            &buffer[0], next_chunk_size, read_this_round);
-                        HRESULT hr = destination->Write(
-                            &buffer[0], read_this_round, &written_this_round);
-                        if (FAILED(hr))
-                        {
-                            com_error_from_interface(destination, hr);
-                        }
+                    // These two take care of updating the total on each pass
+                    // round the loop as well as on termination, exception or
+                    // natural.
+                    //
+                    // The means the out counts are valid even in the failure
+                    // case. MSDN says they don't have to be but, as we can,
+                    // we might as well
+                    impl::byte_count_incrementer read_incrementer(
+                        bytes_read_out, read_this_round);
 
-                        bytes_read_out->QuadPart += read_this_round;
-                        bytes_written_out->QuadPart += written_this_round;
-                    }
-                    catch(...)
+                    impl::byte_count_incrementer write_incrementer(
+                        bytes_written_out, written_this_round);
+
+                    m_traits.do_read(
+                        &buffer[0], next_chunk_size, read_this_round);
+                    HRESULT hr = destination->Write(
+                        &buffer[0], read_this_round, &written_this_round);
+                    if (FAILED(hr))
                     {
-                        // The counts must be updated even in the failure case
-                        // Well, MSDN says they don't have to be but,
-                        // as we can, we might as well
-                        bytes_read_out->QuadPart += read_this_round;
-                        bytes_written_out->QuadPart += written_this_round;
-                        throw;
+                        com_error_from_interface(destination, hr);
                     }
 
                     if (read_this_round < next_chunk_size)
