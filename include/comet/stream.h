@@ -1018,26 +1018,26 @@ namespace impl {
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("Revert", "adapted_stream");
         }
 
-        virtual HRESULT STDMETHODCALLTYPE LockRegion( 
-            ULARGE_INTEGER offset, ULARGE_INTEGER extent, DWORD lock_type)
+        virtual HRESULT STDMETHODCALLTYPE LockRegion(
+            ULARGE_INTEGER /*offset*/, ULARGE_INTEGER /*extent*/,
+            DWORD /*lock_type*/)
         {
-
             try
             {
-
-                return S_OK;
+                throw com_error(
+                    "Locking not supported", STG_E_INVALIDFUNCTION);
             }
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("LockRegion", "adapted_stream");
         }
 
         virtual HRESULT STDMETHODCALLTYPE UnlockRegion(
-            ULARGE_INTEGER offset, ULARGE_INTEGER extent, DWORD lock_type)
+            ULARGE_INTEGER /*offset*/, ULARGE_INTEGER /*extent*/,
+            DWORD /*lock_type*/)
         {
-
             try
             {
-
-                return S_OK;
+                throw com_error(
+                    "Locking not supported", STG_E_INVALIDFUNCTION);
             }
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("UnlockRegion", "adapted_stream");
         }
