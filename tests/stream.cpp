@@ -12,6 +12,9 @@
  * This header is part of Comet version 2.
  * https://github.com/alamaison/comet
  */
+
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp> // current_path
 #include <boost/test/unit_test.hpp>
 
 #include <comet/stream.h> // test subject
@@ -28,6 +31,8 @@
 #include <string>
 #include <vector>
 
+using boost::filesystem::path;
+using boost::filesystem::current_path;
 using boost::test_tools::predicate_result;
 
 using comet::adapt_stream;
@@ -101,14 +106,28 @@ namespace {
         BOOST_CHECK_EQUAL(new_pos.QuadPart, expected_new_pos);
     }
 
+    path temp_path()
+    {
+#pragma warning(push)
+#pragma warning(disable:4996)
+        string name = std::tmpnam(NULL);
+#pragma warning(pop)
+
+        if (!name.empty() && name[0] == '\\')
+        {
+            return current_path() / name;
+        }
+        else
+        {
+            return name;
+        }
+    }
+
     class file_stream_fixture
     {
     public:
 
-#pragma warning(push)
-#pragma warning(disable:4996)
-        file_stream_fixture() : m_temp_name(std::tmpnam(NULL)) {}
-#pragma warning(pop)
+        file_stream_fixture() : m_temp_name(temp_path().string()) {}
 
         ~file_stream_fixture()
         {
@@ -161,6 +180,7 @@ namespace {
         void create_with_contents(const string& contents)
         {
             ofstream s(m_temp_name.c_str());
+            BOOST_REQUIRE(s);
             if (!contents.empty())
             {
                 s.write(&contents[0], contents.size());
