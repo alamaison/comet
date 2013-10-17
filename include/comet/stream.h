@@ -873,8 +873,15 @@ namespace impl {
                     new_end_position.QuadPart = new_size.QuadPart - 1;
 
                     std::streamoff new_offset;
-                    if (new_end_position.QuadPart > 
-                        (std::numeric_limits<std::streamoff>::max)())
+                    if ((std::numeric_limits<std::streamoff>::max)() < 0)
+                    {
+                        assert(!"Purely negative number!");
+                        throw com_error(
+                            "Seek offset too large", STG_E_INVALIDFUNCTION);
+                    }
+                    else if (new_end_position.QuadPart > 
+                        static_cast<ULONGLONG>(
+                            (std::numeric_limits<std::streamoff>::max)()))
                     {
                         throw com_error(
                             "Seek offset too large", STG_E_INVALIDFUNCTION);

@@ -200,7 +200,11 @@ namespace {
         // i.e. not already the expected count before call
         ULONG count = ((ULONG)expected_valid_bytes.size()) + 99;
 
-        HRESULT hr = stream->Read(&buffer[0], buffer.size(), &count);
+        // makes static cast safe
+        BOOST_REQUIRE(buffer.size() <= (std::numeric_limits<ULONG>::max)());
+
+        HRESULT hr = stream->Read(
+            &buffer[0], static_cast<ULONG>(buffer.size()), &count);
 
         BOOST_CHECK_EQUAL_COLLECTIONS(
             buffer.begin(), buffer.begin() + count,
@@ -333,7 +337,7 @@ BOOST_AUTO_TEST_CASE( write_to_stl_istream_fails )
     ULONG count = 99;
     BOOST_CHECK(
         has_hresult(
-            s->Write(&buffer[0], buffer.size(), &count), s,
+            s->Write(&buffer[0], static_cast<ULONG>(buffer.size()), &count), s,
             STG_E_ACCESSDENIED));
     BOOST_CHECK_EQUAL(count, 0U);
 
@@ -350,7 +354,9 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream )
 
     string data("gobbeldy gook");
     ULONG count = 99;
-    BOOST_CHECK(is_s_ok(s->Write(&data[0], data.size(), &count), s));
+    BOOST_CHECK(
+        is_s_ok(
+            s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s));
     BOOST_CHECK_EQUAL(count, data.size());
 
     stl_stream.flush();
@@ -419,7 +425,8 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof )
     ULONG count = 99;
     BOOST_CHECK(
         has_hresult(
-            s->Write(&data[0], data.size(), &count), s, STG_E_MEDIUMFULL));
+            s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
+            STG_E_MEDIUMFULL));
     BOOST_CHECK_EQUAL(count, 3U);
 
     BOOST_CHECK_EQUAL(buf.str(), "gob");
@@ -471,7 +478,10 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error )
     string data("gobbeldy gook");
     ULONG count = 99;
     BOOST_CHECK(
-        has_hresult(s->Write(&data[0], data.size(), &count), s, E_FAIL));
+        has_hresult(
+            s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
+            E_FAIL));
+
     BOOST_CHECK_EQUAL(count, 3U);
 
     BOOST_CHECK_EQUAL(buf.str(), "gob");
@@ -938,7 +948,7 @@ BOOST_AUTO_TEST_CASE( copy_istream_no_count_vars )
 BOOST_AUTO_TEST_CASE( copy_istream_large_exact_multiple )
 {
     // tests an exact multiple of goes round the copy chunk
-    size_t size = 2048;
+    unsigned int size = 2048;
     test_input_stream source = input_stream(string(size, 'g'));
     ostringstream dest;
 
@@ -962,7 +972,7 @@ BOOST_AUTO_TEST_CASE( copy_istream_large_exact_multiple )
 
 BOOST_AUTO_TEST_CASE( copy_istream_large_non_exact_multiple )
 {
-    size_t size = 2049;
+    unsigned int size = 2049;
     test_input_stream source = input_stream(string(size, 'g'));
     ostringstream dest;
 
