@@ -4,6 +4,7 @@
   */
 /*
  * Copyright © 2000-2002 Sofus Mortensen
+ * Copyright (C) 2013 Alexander Lamaison <alexander.lamaison@gmail.com>
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -23,7 +24,7 @@
 #define COMET_MAJOR_VER 2
 #define COMET_BUILDTYPE gamma
 #define COMET_MINOR_VER 0
-#define COMET_BUILD 20091110
+#define COMET_BUILD 20131017
 
 #ifndef COMET_BUILD_VERSION_ONLY
 

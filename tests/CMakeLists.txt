@@ -1,5 +1,5 @@
 #
-# Copyright © 2012 Alexander Lamaison
+# Copyright (C) 2012, 2013 Alexander Lamaison <alexander.lamaison@gmail.com>
 #
 # This material is provided "as is", with absolutely no warranty
 # expressed or implied. Any use is at your own risk. Permission to
@@ -38,6 +38,7 @@ set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/ptr.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/registry.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/safearray.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/stream.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/threading.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/tlbinfo.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/typelist.cpp

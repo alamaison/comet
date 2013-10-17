@@ -3,6 +3,7 @@
   */
 /*
  * Copyright 2003 Atex Media Command.  All rights reserved.
+ * Copyright (C) 2013 Alexander Lamaison <alexander.lamaison@gmail.com>
  *
  * This material is provided "as is", with absolutely no warranty
  * expressed or implied. Any use is at your own risk. Permission to
@@ -97,6 +98,21 @@
  */
 
 #define COMET_CATCH_CLASS(funcName) COMET_CATCH_CLASS_EX(funcName, comtype<interface_is>::uuid())
+
+// We define these new catch macros because the ones above don't seem to work.
+// They use a mystery _B to get the class name.  It may have been part of the
+// old code-generation mechanism which we don't support any more.
+#define COMET_CATCH_INTERFACE_BOUNDARY(funcName) \
+    catch ( ... ) { \
+        return comet_exception_handler<true>::rethrow( \
+            source_info_t(funcName, comtype<interface_is>::uuid())); \
+    }
+
+#define COMET_CATCH_CLASS_INTERFACE_BOUNDARY(funcName, clsName) \
+    catch ( ... ) { \
+        return comet_exception_handler<true>::rethrow( \
+            source_info_t(funcName, comtype<interface_is>::uuid(), clsName)); \
+    }
 
 namespace comet {
 
