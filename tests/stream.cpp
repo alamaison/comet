@@ -27,6 +27,7 @@
 #include <exception>
 #include <iterator> // istreambuf_iterator
 #include <fstream>
+#include <memory> // auto_ptr
 #include <sstream> // istringstream, ostringstream, stringstream
 #include <string>
 #include <vector>
@@ -36,11 +37,13 @@ using boost::filesystem::current_path;
 using boost::test_tools::predicate_result;
 
 using comet::adapt_stream;
+using comet::adapt_stream_pointer;
 using comet::auto_attach;
 using comet::bstr_t;
 using comet::com_ptr;
 using comet::com_error_from_interface;
 
+using std::auto_ptr;
 using std::exception;
 using std::fstream;
 using std::ifstream;
@@ -155,6 +158,13 @@ namespace {
         {
             create_with_contents(contents);
             return fstream(m_temp_name.c_str());
+        }
+
+        auto_ptr<test_io_stream> io_stream_pointer(
+            const string& contents=string())
+        {
+            create_with_contents(contents);
+            return auto_ptr<test_io_stream>(new fstream(m_temp_name.c_str()));
         }
 
         void check_stream_contains(const string& contents)
@@ -1255,6 +1265,14 @@ BOOST_AUTO_TEST_CASE( stat_no_request_name_has_name )
 
     BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
     BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));
+}
+
+BOOST_AUTO_TEST_CASE( adapt_stream_adopt_ownership )
+{
+    com_ptr<IStream> s =
+        adapt_stream_pointer(io_stream_pointer("gobbeldy gook"));
+
+    check_read_to_end(s, string("gobbeldy gook"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

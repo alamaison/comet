@@ -1126,13 +1126,283 @@ namespace impl {
         stream_traits_type m_traits;
         bstr_t m_optional_name;
     };
+
+    template<typename StreamPtr>
+    class adapted_stream_pointer : public simple_object<IStream>
+    {
+    public:
+
+        adapted_stream_pointer(StreamPtr stream, const bstr_t& optional_name)
+            : m_stream(stream), m_inner(adapt_stream(*m_stream, optional_name))
+        {}
+
+        // The forwarded methods must return their HRESULT by throwing and
+        // catching in order to propagate the IErrorInfo upwards.
+
+        virtual HRESULT STDMETHODCALLTYPE Read( 
+            void* buffer, ULONG buffer_size, ULONG* read_count_out)
+        {
+            if (read_count_out)
+            {
+                *read_count_out = 0U;
+            }
+
+            try
+            {
+                HRESULT hr = m_inner->Read(buffer, buffer_size, read_count_out);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+                
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "Read", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE Write(
+            const void* buffer, ULONG buffer_size, ULONG* written_count_out)
+        {
+            if (written_count_out)
+            {
+                *written_count_out = 0U;
+            }
+
+            try
+            {
+                HRESULT hr = m_inner->Write(
+                    buffer, buffer_size, written_count_out);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "Write", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE Seek(
+            LARGE_INTEGER offset, DWORD origin,
+            ULARGE_INTEGER* new_position_out)
+        {
+            if (new_position_out)
+            {
+                new_position_out->QuadPart = 0U;
+            }
+
+            try
+            {
+                HRESULT hr = m_inner->Seek(offset, origin, new_position_out);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+                
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "Seek", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE SetSize(ULARGE_INTEGER new_size)
+        {
+            try
+            {
+                HRESULT hr = m_inner->SetSize(new_size);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "SetSize", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE CopyTo( 
+            IStream* destination, ULARGE_INTEGER amount,
+            ULARGE_INTEGER* bytes_read_out, ULARGE_INTEGER* bytes_written_out)
+        {
+            if (bytes_read_out)
+            {
+                bytes_read_out->QuadPart = 0U;
+            }
+
+            if (bytes_written_out)
+            {
+                bytes_written_out->QuadPart = 0U;
+            }
+
+            try
+            {
+                HRESULT hr = m_inner->CopyTo(
+                    destination, amount, bytes_read_out, bytes_written_out);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "CopyTo", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE Commit(DWORD commit_flags)
+        {
+            try
+            {
+                HRESULT hr = m_inner->Commit(commit_flags);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "Commit", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE Revert()
+        {
+            try
+            {
+                HRESULT hr = m_inner->Revert();
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "Revert", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE LockRegion(
+            ULARGE_INTEGER offset, ULARGE_INTEGER extent, DWORD lock_type)
+        {
+            try
+            {
+                HRESULT hr = m_inner->LockRegion(offset, extent, lock_type);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "LockRegion", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE UnlockRegion(
+            ULARGE_INTEGER offset, ULARGE_INTEGER extent, DWORD lock_type)
+        {
+            try
+            {
+                HRESULT hr = m_inner->UnlockRegion(offset, extent, lock_type);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "UnlockRegion", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE Stat( 
+            STATSTG* attributes_out, DWORD stat_flag)
+        {
+            if (attributes_out)
+            {
+                *attributes_out = STATSTG();
+            }
+
+            try
+            {
+                HRESULT hr = m_inner->Stat(attributes_out, stat_flag);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "Stat", "adapted_stream_pointer");
+        }
+
+        virtual HRESULT STDMETHODCALLTYPE Clone(IStream** stream_out)
+        {
+            if (stream_out)
+            {
+                *stream_out = NULL;
+            }
+
+            try
+            {
+                HRESULT hr = m_inner->Clone(stream_out);
+                if (FAILED(hr))
+                    throw com_error_from_interface(m_inner, hr);
+
+                return hr;
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY(
+                "Clone", "adapted_stream_pointer");
+        }
+
+    private:
+
+        StreamPtr m_stream;
+        com_ptr<IStream> m_inner;
+    };
+
 }
 
+/**
+ * Wrap COM IStream interface around C++ IOStream.
+ *
+ * The caller must ensure that the C++ IOStream remains valid until the
+ * last reference to the returned wrapper is released.
+ *
+ * Unlike C++ streams which may have separate read and write positions that
+ * move independently, COM IStreams assume a single combined read/write head.
+ * Therefore this wrapper always starts the next read or write operation
+ * from the where the last operation finished, regardless of whether that
+ * operation was a call to `Read` or `Write`.
+ *
+ * @note This only applies for as long as the read/write positions are
+ *       modified only via this wrapper.  If the positions are modified by
+ *       directly on the underlying IOStream, it is undefined whether the
+ *       starting point for the next call to `Read`/`Write` is syncronised
+ *       with the end of the previous operation.
+ *
+ * If operations on the inner stream results in failure (the `failbit`
+ * is set), this is communicated via the COM-interface return code.  The
+ * `failbit` is cleared before the call returns.  This allows further
+ * wrapper methods to be called without having the clear the bit directly
+ * on the underlying stream.  Fatal errors (`badbit`) and end-of-file
+ * (`eofbit`) are left unchanged and remain visible in the underlying
+ * stream.
+ */
 template<typename Stream>
 inline com_ptr<IStream> adapt_stream(
     Stream& stream, const bstr_t& optional_name=bstr_t())
 {
     return new impl::adapted_stream<Stream>(stream, optional_name);
+}
+
+/**
+ * Wrap COM IStream interface around pointer (usually smart) to C++ IOStream.
+ *
+ * If the pointer type is a smart pointer, the caller need not must ensure
+ * the lifetime of the C++ IOStream exceeds that of the adapter; the smart
+ * pointer takes care of ensuring this.
+ *
+ * The main reason for having this function in addition to `adapt_stream` is
+ * support the common case where a COM stream is intended to be the sole owner
+ * of the C++ stream with which it is created.  This allows the caller to
+ * create the IStream and forget about the C++ stream.  Using `adapt_stream`
+ * they would have to manage the lifetime of both.
+ *
+ * When we support movable types (C++11 or Boost.Move emulation), this method
+ * would become unnecessary for this purpose as the C++ stream could simply
+ * be moved into the adapter
+ */
+template<typename StreamPtr>
+inline com_ptr<IStream> adapt_stream_pointer(
+    StreamPtr stream_pointer, const bstr_t& optional_name=bstr_t())
+{
+    return new impl::adapted_stream_pointer<StreamPtr>(
+        stream_pointer, optional_name);
 }
 
 }
