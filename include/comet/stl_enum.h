@@ -56,6 +56,10 @@ namespace comet {
             }
 
         private:
+
+            // Not copy-assignable
+            stl_enum_source& operator=(const stl_enum_source&);
+
             com_ptr<Outer> outer_;
             const Collection& container_;
             const_iterator it_;
