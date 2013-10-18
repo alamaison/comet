@@ -15,13 +15,13 @@
 
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp> // current_path
+#include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <comet/stream.h> // test subject
 
 #include <comet/error.h> // com_error_from_interface
 #include <comet/ptr.h> // com_ptr
-#include <comet/bstr.h> // bstr_t
 
 #include <cstdio> // tmpnam, remove
 #include <exception>
@@ -34,12 +34,11 @@
 
 using boost::filesystem::path;
 using boost::filesystem::current_path;
+using boost::shared_ptr;
 using boost::test_tools::predicate_result;
 
 using comet::adapt_stream;
 using comet::adapt_stream_pointer;
-using comet::auto_attach;
-using comet::bstr_t;
 using comet::com_ptr;
 using comet::com_error_from_interface;
 
@@ -55,6 +54,7 @@ using std::ostream;
 using std::ostringstream;
 using std::string;
 using std::vector;
+using std::wstring;
 
 namespace {
 
@@ -1215,9 +1215,10 @@ BOOST_AUTO_TEST_CASE( stat_request_name_has_no_name )
 
     STATSTG stg = STATSTG();
     BOOST_REQUIRE(is_s_ok(s->Stat(&stg, STATFLAG_DEFAULT), s));
-    bstr_t name(auto_attach(stg.pwcsName));
+    BOOST_REQUIRE(stg.pwcsName);
+    shared_ptr<OLECHAR> name(stg.pwcsName, ::CoTaskMemFree);
 
-    BOOST_CHECK(name.empty());
+    BOOST_CHECK(wstring(name.get()) == OLESTR(""));
 
     BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
     BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));
@@ -1231,9 +1232,10 @@ BOOST_AUTO_TEST_CASE( stat_request_name_has_name )
 
     STATSTG stg = STATSTG();
     BOOST_REQUIRE(is_s_ok(s->Stat(&stg, STATFLAG_DEFAULT), s));
-    bstr_t name(auto_attach(stg.pwcsName));
+    BOOST_REQUIRE(stg.pwcsName);
+    shared_ptr<OLECHAR> name(stg.pwcsName, ::CoTaskMemFree);
 
-    BOOST_CHECK_EQUAL(name, L"clever trevor");
+    BOOST_CHECK(wstring(name.get()) == OLESTR("clever trevor"));
 
     BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
     BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));
@@ -1248,6 +1250,7 @@ BOOST_AUTO_TEST_CASE( stat_no_request_name_has_no_name )
     STATSTG stg = STATSTG();
     BOOST_REQUIRE(is_s_ok(s->Stat(&stg, STATFLAG_NONAME), s));
     BOOST_CHECK(!stg.pwcsName);
+    shared_ptr<OLECHAR> name(stg.pwcsName, ::CoTaskMemFree); // just in case
 
     BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
     BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));
@@ -1262,6 +1265,7 @@ BOOST_AUTO_TEST_CASE( stat_no_request_name_has_name )
     STATSTG stg = STATSTG();
     BOOST_REQUIRE(is_s_ok(s->Stat(&stg, STATFLAG_NONAME), s));
     BOOST_CHECK(!stg.pwcsName);
+    shared_ptr<OLECHAR> name(stg.pwcsName, ::CoTaskMemFree); // just in case
 
     BOOST_CHECK_EQUAL(stg.cbSize.QuadPart, 13U);
     BOOST_CHECK_EQUAL(stg.type, static_cast<DWORD>(STGTY_STREAM));

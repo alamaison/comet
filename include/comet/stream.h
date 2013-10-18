@@ -31,6 +31,8 @@
 #include <limits> // numeric_limits
 #include <ostream>
 
+#include <strsafe.h> // StringCbCopyW
+
 namespace comet {
 
 namespace impl {
@@ -1093,8 +1095,38 @@ namespace impl {
                 // memory
                 if (!(stat_flag & STATFLAG_NONAME))
                 {
-                    bstr_t name_copy = m_optional_name;
-                    attributes_out->pwcsName = name_copy.detach();
+                    // pwcsName is NOT a BSTR.  It's a null-terminated OLESTR
+                    // managed by the COM memory allocator
+
+                    size_t buffer_size = m_optional_name.size() + 1;
+                    size_t buffer_size_in_bytes =
+                        buffer_size * sizeof(wchar_t);
+                    
+                    attributes_out->pwcsName = static_cast<LPOLESTR>(
+                        ::CoTaskMemAlloc(buffer_size_in_bytes));
+                    if (!attributes_out->pwcsName)
+                    {
+                        throw com_error(
+                            "Unable to allocate memory for stream name",
+                            STG_E_INSUFFICIENTMEMORY);
+                    }
+
+                    try
+                    {
+                        HRESULT hr = ::StringCbCopyW(
+                            attributes_out->pwcsName, buffer_size_in_bytes,
+                            m_optional_name.c_str());
+                        if (FAILED(hr))
+                        {
+                            throw com_error(
+                                "Unable to copy stream name to STATSTG", hr);
+                        }
+                    }
+                    catch(...)
+                    {
+                        ::CoTaskMemFree(attributes_out->pwcsName);
+                        throw;
+                    }
                 }
 
                 return S_OK;
