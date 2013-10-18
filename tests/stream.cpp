@@ -46,6 +46,7 @@ using std::auto_ptr;
 using std::exception;
 using std::fstream;
 using std::ifstream;
+using std::iostream;
 using std::istream;
 using std::istreambuf_iterator;
 using std::istringstream;
@@ -1278,5 +1279,133 @@ BOOST_AUTO_TEST_CASE( adapt_stream_adopt_ownership )
 
     check_read_to_end(s, string("gobbeldy gook"));
 }
+
+class unseekable_no_throw_streambuf : public std::streambuf
+{
+public:
+    unseekable_no_throw_streambuf() {}
+};
+
+/**
+ * Tests how we handle the underlying stream refusing to seek by returning
+ * an invalid offset  This is the behaviour of the default stream
+ * implementation.
+ */
+BOOST_AUTO_TEST_CASE( seek_with_unseekable_no_throw_ostream )
+{
+    unseekable_no_throw_streambuf buf;
+    ostream stl_stream(&buf);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {0};
+    ULARGE_INTEGER new_position;
+    BOOST_CHECK(
+        has_hresult(
+            s->Seek(move, STREAM_SEEK_CUR, &new_position), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_position.QuadPart, 0U);
+}
+
+BOOST_AUTO_TEST_CASE( seek_with_unseekable_no_throw_istream )
+{
+    unseekable_no_throw_streambuf buf;
+    istream stl_stream(&buf);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {0};
+    ULARGE_INTEGER new_position;
+    BOOST_CHECK(
+        has_hresult(
+            s->Seek(move, STREAM_SEEK_CUR, &new_position), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_position.QuadPart, 0U);
+}
+
+BOOST_AUTO_TEST_CASE( seek_with_unseekable_no_throw_iostream )
+{
+    unseekable_no_throw_streambuf buf;
+    iostream stl_stream(&buf);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {0};
+    ULARGE_INTEGER new_position;
+    BOOST_CHECK(
+        has_hresult(
+            s->Seek(move, STREAM_SEEK_CUR, &new_position), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_position.QuadPart, 0U);
+}
+
+class unseekable_streambuf : public std::streambuf
+{
+public:
+    unseekable_streambuf() {}
+
+private:
+    virtual pos_type seekoff(
+        off_type, std::ios_base::seekdir,
+        std::ios_base::openmode = std::ios_base::in | std::ios_base::out)
+    {
+        throw exception("Surprise!");
+    }
+
+	virtual pos_type __CLR_OR_THIS_CALL seekpos(
+        pos_type,
+        std::ios_base::openmode = std::ios_base::in | std::ios_base::out)
+    {
+        throw exception("Surprise!");
+    }
+};
+
+/**
+ * Tests how we handle the underlying stream refusing to seek by throwing
+ * an exception.  This is the behaviour of the Boost.IOStreams
+ * implementation when seekability is not specified.
+ */
+BOOST_AUTO_TEST_CASE( seek_with_unseekable_ostream )
+{
+    unseekable_streambuf buf;
+    ostream stl_stream(&buf);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {0};
+    ULARGE_INTEGER new_position;
+    BOOST_CHECK(
+        has_hresult(
+            s->Seek(move, STREAM_SEEK_CUR, &new_position), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_position.QuadPart, 0U);
+}
+
+BOOST_AUTO_TEST_CASE( seek_with_unseekable_istream )
+{
+    unseekable_streambuf buf;
+    istream stl_stream(&buf);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {0};
+    ULARGE_INTEGER new_position;
+    BOOST_CHECK(
+        has_hresult(
+            s->Seek(move, STREAM_SEEK_CUR, &new_position), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_position.QuadPart, 0U);
+}
+
+BOOST_AUTO_TEST_CASE( seek_with_unseekable_iostream )
+{
+    unseekable_streambuf buf;
+    iostream stl_stream(&buf);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    LARGE_INTEGER move = {0};
+    ULARGE_INTEGER new_position;
+    BOOST_CHECK(
+        has_hresult(
+            s->Seek(move, STREAM_SEEK_CUR, &new_position), s, E_FAIL));
+    BOOST_CHECK_EQUAL(new_position.QuadPart, 0U);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

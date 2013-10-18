@@ -206,19 +206,36 @@ namespace impl {
             : m_stream(stream), m_new_position_out(new_position_out)
         {}
 
-        ~read_position_finaliser()
+        ~read_position_finaliser() throw()
         {
-            // we still want the read position if previous op failed
-            m_stream.clear();
+            try
+            {
+                // we still want the read position if previous op failed
+                m_stream.clear();
 
-            std::streampos new_position = m_stream.tellg();
-            if (m_stream)
-            {
-                m_new_position_out = new_position;
+                std::streampos new_position = m_stream.tellg();
+                if (m_stream)
+                {
+                    m_new_position_out = new_position;
+                }
+                else
+                {
+                    m_new_position_out = std::streampos();
+                }
             }
-            else
+            catch (...)
             {
-                m_new_position_out = std::streampos();
+                // We tried.  Nothing else we can do
+                //
+                // We likely ended up here in the exception unwinding of a
+                // failed seek because a non-seekable stream chose to let us
+                // know by throwing an exception from the streambuf
+                // (e.g. Boost.IOStream).  Non-seekable is also non-tellable so
+                // telgp does the same thing.
+                //
+                // We have prevent this exception propagating else we get an
+                // thrown while unwinding another exception causing terminate()
+                m_new_position_out = std::streampos(-1);
             }
         }
 
@@ -241,19 +258,36 @@ namespace impl {
             : m_stream(stream), m_new_position_out(new_position_out)
         {}
 
-        ~write_position_finaliser()
+        ~write_position_finaliser() throw()
         {
-            // we still want the write position if previous op failed
-            m_stream.clear();
+            try
+            {
+                // we still want the write position if previous op failed
+                m_stream.clear();
 
-            std::streampos new_position = m_stream.tellp();
-            if (m_stream)
-            {
-                m_new_position_out = new_position;
+                std::streampos new_position = m_stream.tellp();
+                if (m_stream)
+                {
+                    m_new_position_out = new_position;
+                }
+                else
+                {
+                    m_new_position_out = std::streampos();
+                }
             }
-            else
+            catch (...)
             {
-                m_new_position_out = std::streampos();
+                // We tried.  Nothing else we can do
+                //
+                // We likely ended up here in the exception unwinding of a
+                // failed seek because a non-seekable stream chose to let us
+                // know by throwing an exception from the streambuf
+                // (e.g. Boost.IOStream).  Non-seekable is also non-tellable so
+                // tellp does the same thing.
+                //
+                // We have prevent this exception propagating else we get an
+                // thrown while unwinding another exception causing terminate()
+                m_new_position_out = std::streampos(-1);
             }
         }
 
@@ -301,7 +335,10 @@ namespace impl {
                     std::streamoff offset_from_beginning = m_source;
                     if (offset_from_beginning < 0)
                     {
-                        assert(!"negative offset from beginning?! screwed.");
+                        // Invalid offset, for example seeking not supported
+                        // The error itself is dealt with right after seeking
+                        // so this class just has to convert it to something
+                        // reasonable for an unsigned value
                         m_destination->QuadPart = 0U;
                     }
                     else
