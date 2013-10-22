@@ -279,6 +279,37 @@ BOOST_AUTO_TEST_CASE( read_from_stl_istream_over )
     check_stream_contains("gobbeldy gook");
 }
 
+namespace {
+
+    string large_data()
+    {
+        string data;
+        for (int i = 0; i < 0x40000; ++i)
+        {
+            data.push_back('a');
+            data.push_back('\0');
+            data.push_back(-1);
+        }
+
+        return data;
+    }
+
+}
+
+BOOST_AUTO_TEST_CASE( read_from_stl_istream_multiple_buffers )
+{
+    // large data is big enough to exceed the stream buffer size
+    string data = large_data();
+
+    test_input_stream stl_stream = input_stream(data);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    check_read_results_in(s, data.size(), data, S_OK);
+
+    check_stream_contains(data);
+}
+
 /**
  * Throws, rather than returning next character, when reaching given
  * position in given string.
@@ -373,6 +404,25 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream )
     stl_stream.flush();
     check_stream_contains("gobbeldy gook");
 }
+
+BOOST_AUTO_TEST_CASE( write_to_stl_ostream_multiple_buffers )
+{
+    test_output_stream stl_stream = output_stream();
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    // large data is big enough to exceed the stream buffer size
+    string data = large_data();
+    ULONG count = 99;
+    BOOST_CHECK(
+        is_s_ok(
+            s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s));
+    BOOST_CHECK_EQUAL(count, data.size());
+
+    stl_stream.flush();
+    check_stream_contains(data);
+}
+
 
 BOOST_AUTO_TEST_CASE( read_from_stl_ostream_fails )
 {
@@ -936,6 +986,32 @@ BOOST_AUTO_TEST_CASE( copy_istream_over )
 
     check_stream_contains(string("gobbeldy gook"));
     BOOST_CHECK_EQUAL(dest.str(), string("gobbeldy gook"));
+}
+
+BOOST_AUTO_TEST_CASE( copy_istream_multiple_buffers )
+{
+    string data = large_data();
+
+    test_input_stream source = input_stream(data);
+    ostringstream dest;
+
+    com_ptr<IStream> s = adapt_stream(source);
+    com_ptr<IStream> d = adapt_stream(dest);
+
+    ULARGE_INTEGER amount;
+    amount.QuadPart = static_cast<ULONGLONG>(data.size());
+    ULARGE_INTEGER bytes_read = {0};
+    ULARGE_INTEGER bytes_written = {0};
+    BOOST_CHECK(
+        is_s_ok(s->CopyTo(d.in(), amount, &bytes_read, &bytes_written), s));
+    BOOST_CHECK_EQUAL(bytes_read.QuadPart, data.size());
+    BOOST_CHECK_EQUAL(bytes_written.QuadPart, data.size());
+
+    // must advance the seek pointer so have no more to read
+    check_read_to_end(s, string());
+
+    check_stream_contains(data);
+    BOOST_CHECK_EQUAL(dest.str(), data);
 }
 
 BOOST_AUTO_TEST_CASE( copy_istream_no_count_vars )
