@@ -661,11 +661,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     check_date_matches(d, f.utc_test_time());
 }
 
+// It is important that the constructor and later conversion method
+// BOTH use the default conversion to make sure we are testing the
+// round-trippability (if that's not a word, it should be).
 BOOST_AUTO_TEST_CASE_TEMPLATE(
     to_foreign_default_conversion, F, date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
+    datetime_t d(f.get_time());
 
     // TODO: decide what we actually want the defaults to be
     f.check_foreign_matches_utc(f.to_foreign(d));
