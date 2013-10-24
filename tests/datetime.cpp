@@ -347,9 +347,22 @@ public:
         BOOST_CHECK_EQUAL(d.millisecond(), 0);
     }
 
+    // Default for time_t construction is conversion, so match local
+    void check_date_matches_default(const datetime_t& d)
+    {
+        check_date_matches_local(d);
+    }
+
     void check_foreign_matches_utc(time_t tin)
     {
         BOOST_CHECK_EQUAL(tin, get_time());
+    }
+
+    void check_foreign_matches_default(time_t tin)
+    {
+        // default out-conversion is to convert back to UTC as all Unix times
+        // are meant to be UTC
+        return check_foreign_matches_utc(tin);
     }
 
     void assign_to_datetime(
@@ -419,6 +432,12 @@ public:
         datetime_filetime_match(d, local_filetime);
     }
 
+    // Default for FILETIME construction is no conversion, so match UTC
+    void check_date_matches_default(const datetime_t& d)
+    {
+        check_date_matches(d, m_time);
+    }
+
     void check_foreign_matches_utc(const FILETIME& ftin)
     {
         FILETIME utc_filetime = get_time();
@@ -429,6 +448,14 @@ public:
     {
         FILETIME utc_filetime = get_local_time();
         filetime_match(ftin, utc_filetime);
+    }
+
+    void check_foreign_matches_default(const FILETIME& ftin)
+    {
+        // default out-conversion is leave as-is and as default FILETIME
+        // constructor also leaves as-is should match original UTC date.
+
+        check_foreign_matches_utc(ftin);
     }
 
     void assign_to_datetime(
@@ -497,6 +524,12 @@ public:
         datetime_systemtime_match(d, st);
     }
 
+    // Default for SYSTEMTIME construction is no conversion so match UTC
+    void check_date_matches_default(const datetime_t& d)
+    {
+        check_date_matches(d, m_time);
+    }
+
     void check_foreign_matches_utc(const SYSTEMTIME& stin)
     {
         SYSTEMTIME st = get_time();
@@ -507,6 +540,14 @@ public:
     {
         SYSTEMTIME st = get_local_time();
         systemtime_match(stin, st);
+    }
+
+    void check_foreign_matches_default(const SYSTEMTIME& stin)
+    {
+        // default out-conversion is leave as-is and as default SYSTEMTIME
+        // constructor also leaves as-is should match original UTC date.
+
+        check_foreign_matches_utc(stin);
     }
 
     void assign_to_datetime(
@@ -567,8 +608,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     F f;
     datetime_t d(f.get_time());
 
-    // TODO: decide what we actually want the defaults to be
-    f.check_date_matches_local(d);
+    f.check_date_matches_default(d);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -628,8 +668,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     datetime_t d;
     f.assign_to_datetime(f.get_time(), d);
 
-    // TODO: decide what we actually want the defaults to be
-    check_date_matches(d, f.utc_test_time());
+    f.check_date_matches_default(d);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -671,7 +710,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     datetime_t d(f.get_time());
 
     // TODO: decide what we actually want the defaults to be
-    f.check_foreign_matches_utc(f.to_foreign(d));
+    f.check_foreign_matches_default(f.to_foreign(d));
 }
 
 BOOST_AUTO_TEST_CASE( to_foreign_no_conversion )
