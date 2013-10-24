@@ -155,25 +155,175 @@ void filetime_match(const FILETIME& ft1, const FILETIME& ft2)
     systemtime_match(st1, st2);
 }
 
-struct unix_time_fixture
+// The tests use more than one fixed test date to try to catch both sides
+// of DST (if any) whatever the timezone these tests are running in.
+// This maximises our chances of finding errors.
+// We call them `early` and `late` as summer and winter vary with where
+// you are
+
+// These test times are UTC.  Unix time is always UTC but FILETIME and
+// SYSTEMTIME can also be local times.  Conversion to and from local times
+// happens outside these test time classes.
+
+// Tue, 03 Jan 2013 01:11:14 -0000
+class early_time
 {
-    time_t get_time()
+public:
+    time_t unix_time() const
     {
         return 1357175474;
     }
 
-    /**
-     * Tests the given datetime_t as though it were a UTC time.
-     */
-    void check_date_matches_utc(const datetime_t& d)
+    FILETIME utc_filetime() const
     {
-        BOOST_CHECK_EQUAL(d.year(), 2013);
-        BOOST_CHECK_EQUAL(d.month(), 1);
-        BOOST_CHECK_EQUAL(d.day(), 3);
-        BOOST_CHECK_EQUAL(d.hour(), 1);
-        BOOST_CHECK_EQUAL(d.minute(), 11);
-        BOOST_CHECK_EQUAL(d.second(), 14);
-        BOOST_CHECK_EQUAL(d.millisecond(), 0);
+        FILETIME ft;
+        LARGE_INTEGER i;
+        i.QuadPart = 130016490740000000;
+        ft.dwLowDateTime = i.LowPart;
+        ft.dwHighDateTime = i.HighPart;
+        return ft;
+    }
+
+    SYSTEMTIME utc_systemtime() const
+    {
+        SYSTEMTIME st;
+        st.wYear = 2013;
+        st.wMonth = 1;
+        st.wDayOfWeek = 4;
+        st.wDay = 3;
+        st.wHour = 1;
+        st.wMinute = 11;
+        st.wSecond = 14;
+        st.wMilliseconds = 0;
+
+        return st;
+    }
+
+    int year() const
+    {
+        return 2013;
+    }
+
+    int month() const
+    {
+        return 1;
+    }
+
+    int day() const
+    {
+        return 3;
+    }
+
+    int hour() const
+    {
+        return 1;
+    }
+
+    int minute() const
+    {
+        return 11;
+    }
+
+    int second() const
+    {
+        return 14;
+    }
+
+    int millisecond() const
+    {
+        return 0;
+    }
+};
+
+// Fri, 02 Aug 2013 16:43:56 -0000
+class late_time
+{
+public:
+    time_t unix_time() const
+    {
+        return 1375461836;
+    }
+
+    FILETIME utc_filetime() const
+    {
+        FILETIME ft;
+        LARGE_INTEGER i;
+        i.QuadPart = 130199354360000000;
+        ft.dwLowDateTime = i.LowPart;
+        ft.dwHighDateTime = i.HighPart;
+        return ft;
+    }
+
+    SYSTEMTIME utc_systemtime()
+    {
+        SYSTEMTIME st;
+        st.wYear = 2013;
+        st.wMonth = 8;
+        st.wDayOfWeek = 5;
+        st.wDay = 2;
+        st.wHour = 16;
+        st.wMinute = 43;
+        st.wSecond = 56;
+        st.wMilliseconds = 0;
+
+        return st;
+    }
+
+    int year() const
+    {
+        return 2013;
+    }
+
+    int month() const
+    {
+        return 8;
+    }
+
+    int day() const
+    {
+        return 2;
+    }
+
+    int hour() const
+    {
+        return 16;
+    }
+
+    int minute() const
+    {
+        return 43;
+    }
+
+    int second() const
+    {
+        return 56;
+    }
+
+    int millisecond() const
+    {
+        return 0;
+    }
+};
+
+template<typename UtcTime>
+void check_date_matches(const datetime_t& d, const UtcTime& time)
+{
+    BOOST_CHECK_EQUAL(d.year(), time.year());
+    BOOST_CHECK_EQUAL(d.month(), time.month());
+    BOOST_CHECK_EQUAL(d.day(), time.day());
+    BOOST_CHECK_EQUAL(d.hour(), time.hour());
+    BOOST_CHECK_EQUAL(d.minute(), time.minute());
+    BOOST_CHECK_EQUAL(d.second(), time.second());
+    BOOST_CHECK_EQUAL(d.millisecond(), time.millisecond());
+}
+
+template<typename UtcTime>
+class unix_time_fixture
+{
+public:
+    time_t get_time()
+    {
+        return m_time.unix_time();
     }
 
     /**
@@ -197,9 +347,22 @@ struct unix_time_fixture
         BOOST_CHECK_EQUAL(d.millisecond(), 0);
     }
 
+    // Default for time_t construction is conversion, so match local
+    void check_date_matches_default(const datetime_t& d)
+    {
+        check_date_matches_local(d);
+    }
+
     void check_foreign_matches_utc(time_t tin)
     {
         BOOST_CHECK_EQUAL(tin, get_time());
+    }
+
+    void check_foreign_matches_default(time_t tin)
+    {
+        // default out-conversion is to convert back to UTC as all Unix times
+        // are meant to be UTC
+        return check_foreign_matches_utc(tin);
     }
 
     void assign_to_datetime(
@@ -227,40 +390,37 @@ struct unix_time_fixture
         BOOST_CHECK(d.to_unixtime(&t, mode));
         return t;
     }
+
+    UtcTime utc_test_time()
+    {
+        return m_time;
+    }
+
+private:
+    UtcTime m_time;
 };
 
+template<typename UtcTime>
 class filetime_fixture
 {
 public:
 
     FILETIME get_time()
     {
-        FILETIME ft;
-        LARGE_INTEGER i;
-        i.QuadPart = 130016490740000000;
-        ft.dwLowDateTime = i.LowPart;
-        ft.dwHighDateTime = i.HighPart;
-        return ft;
+        return m_time.utc_filetime();
     }
 
     FILETIME get_local_time()
     {
-        FILETIME utc_filetime = get_time();
-        FILETIME local_filetime;
-        BOOST_CHECK(::FileTimeToLocalFileTime(&utc_filetime, &local_filetime));
-        return local_filetime;
-    }
+        // Not using FileTimeToLocalFileTime because it doesn't handle DST
+        SYSTEMTIME st = m_time.utc_systemtime();
+        SYSTEMTIME lst;
+        BOOST_REQUIRE(::SystemTimeToTzSpecificLocalTime(NULL, &st, &lst));
 
-    /**
-     * Tests the given datetime_t as though it were a UTC time.
-     */
-    void check_date_matches_utc(const datetime_t& d)
-    {
-        FILETIME utc_filetime = get_time();
+        FILETIME lft;
+        BOOST_REQUIRE(::SystemTimeToFileTime(&lst, &lft));
 
-        SYSTEMTIME st;
-        BOOST_CHECK(::FileTimeToSystemTime(&utc_filetime, &st));
-        datetime_systemtime_match(d, st);
+        return lft;
     }
 
     /**
@@ -270,6 +430,12 @@ public:
     {
         FILETIME local_filetime = get_local_time();
         datetime_filetime_match(d, local_filetime);
+    }
+
+    // Default for FILETIME construction is no conversion, so match UTC
+    void check_date_matches_default(const datetime_t& d)
+    {
+        check_date_matches(d, m_time);
     }
 
     void check_foreign_matches_utc(const FILETIME& ftin)
@@ -282,6 +448,14 @@ public:
     {
         FILETIME utc_filetime = get_local_time();
         filetime_match(ftin, utc_filetime);
+    }
+
+    void check_foreign_matches_default(const FILETIME& ftin)
+    {
+        // default out-conversion is leave as-is and as default FILETIME
+        // constructor also leaves as-is should match original UTC date.
+
+        check_foreign_matches_utc(ftin);
     }
 
     void assign_to_datetime(
@@ -311,43 +485,34 @@ public:
         //BOOST_CHECK(d.to_filetime(&ft, mode));
         return ft;
     }
-*/
+    */
+
+    UtcTime utc_test_time()
+    {
+        return m_time;
+    }
+
+private:
+
+    UtcTime m_time;
 };
 
+template<typename UtcTime>
 class systemtime_fixture
 {
 public:
     SYSTEMTIME get_time()
     {
-        FILETIME ft = get_filetime();
-
-        SYSTEMTIME st;
-        BOOST_REQUIRE(
-            ::FileTimeToSystemTime(&ft, &st));
-
-        return st;
+        return m_time.utc_systemtime();
     }
 
     SYSTEMTIME get_local_time()
     {
-        FILETIME ft = get_filetime();
-        FILETIME ftl;
-        BOOST_REQUIRE(::FileTimeToLocalFileTime(&ft, &ftl));
+        SYSTEMTIME st = m_time.utc_systemtime();
+        SYSTEMTIME lst;
+        BOOST_REQUIRE(::SystemTimeToTzSpecificLocalTime(NULL, &st, &lst));
 
-        SYSTEMTIME st;
-        BOOST_REQUIRE(
-            ::FileTimeToSystemTime(&ftl, &st));
-
-        return st;
-    }
-
-    /**
-     * Tests the given datetime_t as though it were a UTC time.
-     */
-    void check_date_matches_utc(const datetime_t& d)
-    {
-        SYSTEMTIME st = get_time();
-        datetime_systemtime_match(d, st);
+        return lst;
     }
 
     /**
@@ -357,6 +522,12 @@ public:
     {
         SYSTEMTIME st = get_local_time();
         datetime_systemtime_match(d, st);
+    }
+
+    // Default for SYSTEMTIME construction is no conversion so match UTC
+    void check_date_matches_default(const datetime_t& d)
+    {
+        check_date_matches(d, m_time);
     }
 
     void check_foreign_matches_utc(const SYSTEMTIME& stin)
@@ -369,6 +540,14 @@ public:
     {
         SYSTEMTIME st = get_local_time();
         systemtime_match(stin, st);
+    }
+
+    void check_foreign_matches_default(const SYSTEMTIME& stin)
+    {
+        // default out-conversion is leave as-is and as default SYSTEMTIME
+        // constructor also leaves as-is should match original UTC date.
+
+        check_foreign_matches_utc(stin);
     }
 
     void assign_to_datetime(
@@ -398,27 +577,29 @@ public:
         //BOOST_CHECK(d.to_systemtime(&st, mode));
         return st;
     }
-*/
-private:
-    FILETIME get_filetime()
+    */
+
+    UtcTime utc_test_time()
     {
-        FILETIME ft;
-        LARGE_INTEGER i;
-        i.QuadPart = 130016490740000000;
-        ft.dwLowDateTime = i.LowPart;
-        ft.dwHighDateTime = i.HighPart;
-        return ft;
+        return m_time;
     }
+
+private:
+    UtcTime m_time;
 };
 
 typedef boost::mpl::vector<
-    unix_time_fixture, filetime_fixture, systemtime_fixture>
+    unix_time_fixture<early_time>, unix_time_fixture<late_time>,
+    filetime_fixture<early_time>, filetime_fixture<late_time>,
+    systemtime_fixture<early_time>, systemtime_fixture<late_time>>
     date_conversion_fixtures;
 
 // Unix time_t cannot be in local timezone whereas the others can.  These
 // fixtures have the additional get_local_time() method to tests with a local
 // source date
-typedef boost::mpl::vector<filetime_fixture, systemtime_fixture>
+typedef boost::mpl::vector<
+    filetime_fixture<early_time>, filetime_fixture<late_time>,
+    systemtime_fixture<early_time>, systemtime_fixture<late_time>>
     localable_date_conversion_fixtures;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -427,8 +608,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     F f;
     datetime_t d(f.get_time());
 
-    // TODO: decide what we actually want the defaults to be
-    f.check_date_matches_local(d);
+    f.check_date_matches_default(d);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -436,7 +616,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
 {
     F f;
     datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
-    f.check_date_matches_utc(d);
+    check_date_matches(d, f.utc_test_time());
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -454,7 +634,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     F f;
     datetime_t d(
         f.get_local_time(), datetime_t::utc_convert_mode::local_to_utc);
-    f.check_date_matches_utc(d);
+    check_date_matches(d, f.utc_test_time());
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -462,11 +642,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
 {
     F f;
     datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
-    f.check_date_matches_utc(d);
+    check_date_matches(d, f.utc_test_time());
 
     datetime_t d2 = d.utc_to_local();
     f.check_date_matches_local(d2);
-    f.check_date_matches_utc(d);
+    check_date_matches(d, f.utc_test_time());
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -477,7 +657,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     f.check_date_matches_local(d);
 
     datetime_t d2 = d.local_to_utc();
-    f.check_date_matches_utc(d2);
+    check_date_matches(d2, f.utc_test_time());
     f.check_date_matches_local(d);
 }
 
@@ -488,8 +668,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     datetime_t d;
     f.assign_to_datetime(f.get_time(), d);
 
-    // TODO: decide what we actually want the defaults to be
-    f.check_date_matches_utc(d);
+    f.check_date_matches_default(d);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -498,7 +677,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     F f;
     datetime_t d;
     f.assign_to_datetime(f.get_time(), d, datetime_t::utc_convert_mode::none);
-    f.check_date_matches_utc(d);
+    check_date_matches(d, f.utc_test_time());
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
@@ -518,22 +697,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     datetime_t d;
     f.assign_to_datetime(
         f.get_local_time(), d, datetime_t::utc_convert_mode::local_to_utc);
-    f.check_date_matches_utc(d);
+    check_date_matches(d, f.utc_test_time());
 }
 
+// It is important that the constructor and later conversion method
+// BOTH use the default conversion to make sure we are testing the
+// round-trippability (if that's not a word, it should be).
 BOOST_AUTO_TEST_CASE_TEMPLATE(
     to_foreign_default_conversion, F, date_conversion_fixtures )
 {
     F f;
-    datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
+    datetime_t d(f.get_time());
 
     // TODO: decide what we actually want the defaults to be
-    f.check_foreign_matches_utc(f.to_foreign(d));
+    f.check_foreign_matches_default(f.to_foreign(d));
 }
 
 BOOST_AUTO_TEST_CASE( to_foreign_no_conversion )
 {
-    unix_time_fixture f;
+    unix_time_fixture<early_time> f;
     datetime_t d(f.get_time(), datetime_t::utc_convert_mode::none);
     f.check_foreign_matches_utc(
         f.to_foreign(d, datetime_t::utc_convert_mode::none));
