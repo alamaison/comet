@@ -15,6 +15,7 @@
 
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp> // current_path
+#include <boost/optional/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/test/unit_test.hpp>
 
@@ -34,6 +35,7 @@
 
 using boost::filesystem::path;
 using boost::filesystem::current_path;
+using boost::optional;
 using boost::shared_ptr;
 using boost::test_tools::predicate_result;
 
@@ -201,6 +203,12 @@ namespace {
         string m_temp_name;
     };
 
+    /**
+     * Test that reading from the stream results in the expected bytes.
+     *
+     * The given bytes implicitly give the expected value of the bytes-read
+     * count returned from `Read`.
+     */
     template<typename Collection>
     void check_read_results_in(
         com_ptr<IStream> stream, size_t buffer_size,
@@ -436,48 +444,140 @@ BOOST_AUTO_TEST_CASE( read_from_stl_ostream_fails )
 }
 
 /**
- * Model an output buffer that might cause writing to end prematurely.
- * This allows us to test that we report the status of these writes
- * correctly.
+ * Mock stream buffer that can fail in configuarable ways.
+ *
+ * Lets us test how our wrapper handles the various failures.
  */
-class max_size_stringstreambuf : public std::streambuf
+class mock_streambuf : public std::streambuf
 {
 public:
-    max_size_stringstreambuf(size_t max_size) : m_max_size(max_size) {}
 
-    string str()
+    mock_streambuf(size_t buffer_size=512) 
+        : m_buffer(buffer_size), m_chosen_failure_behaviour(return_eof)
     {
-        return m_str;
+        if (!m_buffer.empty())
+        {
+            setp(&m_buffer[0], &m_buffer[0] + m_buffer.size());
+            setg(&m_buffer[0], &m_buffer[0], &m_buffer[0] + m_buffer.size());
+        }
+        
+        // if no buffer std::streambuf default initialises buffer pointers to
+        // NULL
+    }
+
+    virtual ~mock_streambuf()
+    {
+        sync();
+    }
+
+    /**
+     * Set mock to write at most the given number of characters to the
+     * controlled sequence.
+     *
+     * After reaching the limit, invoked error behaviour set via
+     * `mock_behaviour_failure_type` or EOF is that method has not been called.
+     *
+     * If this method is never called, the mock writes all characters
+     * to controlled sequence.
+     */
+    void mock_behaviour_write_fails_after(std::size_t limit)
+    {
+        m_write_limit = limit;
+    }
+
+    enum failure_behaviour
+    {
+        return_eof,
+        throw_exception
+    };
+
+    void mock_behaviour_failure_type(failure_behaviour behaviour)
+    {
+        m_chosen_failure_behaviour = behaviour;
+    }
+
+    string controlled_sequence()
+    {
+        return m_controlled_sequence;
     }
 
 private:
 
     virtual int_type overflow(int_type c)
     {
+        if (sync() != 0)
+        {
+            return traits_type::eof();
+        }
+
         if (c != traits_type::eof())
         {
-
-            if (m_str.size() < m_max_size)
-            {
-                m_str += traits_type::to_char_type(c);
-            }
-            else
-            {
-                return traits_type::eof();
-            }
+            return write_to_controlled_sequence(traits_type::to_char_type(c));
         }
 
         return c;
     }
 
-    size_t m_max_size;
-    string m_str;
+    virtual int sync()
+    {
+        for (char* p = pbase(); p < pptr() && p < epptr(); ++p)
+        {
+            if (write_to_controlled_sequence(*p) == traits_type::eof())
+            {
+                return -1;
+            }
+        }
+
+        setp(pbase(), pbase(), pbase());
+
+        return 0;
+    }
+
+    int_type write_to_controlled_sequence(char c)
+    {
+        if (!m_write_limit ||
+            m_controlled_sequence.size() < *m_write_limit)
+        {
+            m_controlled_sequence += c;
+            return c;
+        }
+        else
+        {
+            return chosen_failure_behaviour();
+        }
+    }
+
+    int_type chosen_failure_behaviour()
+    {
+        if (m_chosen_failure_behaviour == return_eof)
+        {
+            return traits_type::eof();
+        }
+        else
+        {
+            throw exception("Threw mock exception");
+        }
+    }
+
+    string m_controlled_sequence;
+    vector<char> m_buffer;
+
+    optional<size_t> m_write_limit;
+    failure_behaviour m_chosen_failure_behaviour;
    
 };
 
+// Tests the failure scenario where the stream buffer fails to write to
+// controlled sequence and returns EOF.
+//
+// The mock streambuf doesn't use a buffer so any errors appear immediately
+// as all writes go straight through to the controlled sequence.
 BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof )
 {
-    max_size_stringstreambuf buf(3);
+    mock_streambuf buf(0);
+    buf.mock_behaviour_write_fails_after(3);
+    buf.mock_behaviour_failure_type(mock_streambuf::return_eof);
+
     ostream stl_stream(&buf);
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
@@ -490,48 +590,49 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof )
             STG_E_MEDIUMFULL));
     BOOST_CHECK_EQUAL(count, 3U);
 
-    BOOST_CHECK_EQUAL(buf.str(), "gob");
+    BOOST_CHECK_EQUAL(buf.controlled_sequence(), "gob");
 }
 
-class max_size_throwing_stringstreambuf : public std::streambuf
+// Tests the failure scenario where the stream buffer fails to write to
+// controlled sequence and returns EOF.
+//
+// This is a hard scenario for the wrapper to handle as the IStream
+// interface expects write errors to occur on the Write()
+// but the stream may delay the error till a sync() (after write()).
+// Despite this delay, the behaviour should appear the same from outside the
+// wrapper.
+BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof_delayed )
 {
-public:
-    max_size_throwing_stringstreambuf(size_t throwing_size) :
-      m_throwing_size(throwing_size) {}
+    mock_streambuf buf(400);
+    buf.mock_behaviour_write_fails_after(3);
+    buf.mock_behaviour_failure_type(mock_streambuf::return_eof);
 
-    string str()
-    {
-        return m_str;
-    }
+    ostream stl_stream(&buf);
 
-private:
+    com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    virtual int_type overflow(int_type c)
-    {
-        if (c != traits_type::eof())
-        {
+    string data("gobbeldy gook");
+    ULONG count = 99;
+    BOOST_CHECK(
+        has_hresult(
+            s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
+            STG_E_MEDIUMFULL));
+    BOOST_CHECK_EQUAL(count, 3U);
 
-            if (m_str.size() < m_throwing_size)
-            {
-                m_str += traits_type::to_char_type(c);
-            }
-            else
-            {
-                throw std::exception("No-write surprise");
-            }
-        }
+    BOOST_CHECK_EQUAL(buf.controlled_sequence(), "gob");
+}
 
-        return c;
-    }
-
-    size_t m_throwing_size;
-    string m_str;
-
-};
-
+// Tests the failure scenario where the stream buffer fails to write to
+// controlled sequence and throws an exception.
+//
+// The mock streambuf doesn't use a buffer so any errors appear immediately
+// as all writes go straight through to the controlled sequence.
 BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error )
 {
-    max_size_throwing_stringstreambuf buf(3);
+    mock_streambuf buf(0);
+    buf.mock_behaviour_write_fails_after(3);
+    buf.mock_behaviour_failure_type(mock_streambuf::throw_exception);
+
     ostream stl_stream(&buf);
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
@@ -542,10 +643,42 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error )
         has_hresult(
             s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
             E_FAIL));
-
     BOOST_CHECK_EQUAL(count, 3U);
 
-    BOOST_CHECK_EQUAL(buf.str(), "gob");
+    BOOST_CHECK_EQUAL(buf.controlled_sequence(), "gob");
+}
+
+// Tests the failure scenario where the stream buffer fails to write to
+// controlled sequence and throws an exception.
+//
+// The mock streambuf uses a buffer this time which, because it is bigger
+// than the error point, delays the appearance of errors until the buffer
+// overflows and has to be written out to the controlled sequence.
+//
+// This is a hard scenario for the wrapper to handle as the IStream
+// interface expects write errors to occur on the Write()
+// but the stream may delay the error till a sync() (after write()).
+// Despite this delay, the behaviour should appear the same from outside the
+// wrapper.
+BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error_delayed )
+{
+    mock_streambuf buf(400);
+    buf.mock_behaviour_write_fails_after(3);
+    buf.mock_behaviour_failure_type(mock_streambuf::throw_exception);
+
+    ostream stl_stream(&buf);
+
+    com_ptr<IStream> s = adapt_stream(stl_stream);
+
+    string data("gobbeldy gook");
+    ULONG count = 99;
+    BOOST_CHECK(
+        has_hresult(
+            s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
+            E_FAIL));
+    BOOST_CHECK_EQUAL(count, 3U);
+
+    BOOST_CHECK_EQUAL(buf.controlled_sequence(), "gob");
 }
 
 BOOST_AUTO_TEST_CASE( read_then_write_stl_stream )
@@ -1136,7 +1269,8 @@ BOOST_AUTO_TEST_CASE( commit_inout )
     BOOST_CHECK(is_s_ok(s->Write("zx", 2, &count), s));
     BOOST_CHECK_EQUAL(count, 2U);
 
-    check_stream_contains("abcd");
+    // Not any more - now we flush on write
+    //check_stream_contains("abcd");
     BOOST_CHECK(is_s_ok(s->Commit(STGC_DEFAULT), s));
     check_stream_contains("zxcd");
 }
@@ -1151,7 +1285,8 @@ BOOST_AUTO_TEST_CASE( commit_out )
     BOOST_CHECK(is_s_ok(s->Write("zx", 2, &count), s));
     BOOST_CHECK_EQUAL(count, 2U);
 
-    check_stream_contains("");
+    // Not any more - now we flush on write
+    //check_stream_contains("");
     BOOST_CHECK(is_s_ok(s->Commit(STGC_DEFAULT), s));
     check_stream_contains("zx");
 }

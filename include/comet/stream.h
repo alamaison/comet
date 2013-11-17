@@ -179,8 +179,15 @@ namespace impl {
                 }
                 else
                 {
-                    bytes_written_out =
-                        bytes_written_out + sizeof(stream_type::char_type);
+                    if (!stream.flush())
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        bytes_written_out =
+                            bytes_written_out + sizeof(stream_type::char_type);
+                    }
                 }
             }
         }
