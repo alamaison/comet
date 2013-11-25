@@ -86,121 +86,81 @@ namespace impl {
     {
         typedef std::istream stream_type;
 
+        //
+        // IMPORTANT: The bytes_read_out count must be  correct even in the
+        // error case, EVEN if that error is an exception, because the caller
+        // can treat an error as EOF (see Read method docs).
+        //
+        // However, in the error case it is acceptable to make the read count
+        // smaller than the actual number of bytes read (e.g. 0) because the
+        // caller is losing the unread part of the stream anyway.  Losing a few
+        // extra bytes that are already in the buffer but not declared valid
+        // by the byte count will not make the situation worse.
+
         bytes_read_out = 0U;
 
-        // Using stream buffer directly for unformatted I/O as stream.write()
-        // doesn't give us the number of characters written.
-        //
-        // We use sputc rather than sputn as the latter is allowed to throw
-        // an exception (from inner call to `underflow` among, presumably,
-        // others: http://stackoverflow.com/a/19105858/67013) part way through
-        // the transfer, which prevents us getting the number of characters
-        // read in the error case.  The following code keeps bytes_read_out
-        // updated so that it is correct even if sbumpc throws an exception
-        // later.
-        stream_type::sentry stream_sentry(stream);
-        if (stream_sentry)
+        stream.read(
+            reinterpret_cast<char*>(buffer),
+            buffer_size_in_bytes / sizeof(std::istream::char_type));
+
+        // Any failure not caused by eof is a failure.
+        // Badbit is always a failure because, even if we are at eof, the stream
+        // encountered a problem that needs reporting.
+        if (stream.bad() || (stream.fail() && !stream.eof()))
         {
-            while (bytes_read_out < buffer_size_in_bytes)
+            throw std::runtime_error("Reading from stream failed");
+        }
+        else
+        {
+            if (stream.gcount() >= 0 &&
+                // temp conversion to unsigned larger than ULONG to catch
+                // values larger than ULONG
+                static_cast<ULONGLONG>(stream.gcount()) <
+                    (std::numeric_limits<ULONG>::max)() /
+                    sizeof(std::istream::char_type))
             {
-                stream_type::traits_type::int_type result =
-                    stream.rdbuf()->sbumpc();
-
-                if (stream_type::traits_type::eq_int_type(
-                    result, stream_type::traits_type::eof()))
-                {
-                    break;
-                }
-                else
-                {
-                    // arithmetic to find position is done in bytes and only
-                    // converted to character type when dereferenced.
-                    unsigned char* pos =
-                        reinterpret_cast<unsigned char*>(buffer) +
-                        bytes_read_out;
-
-                    *reinterpret_cast<stream_type::char_type*>(pos) =
-                        stream_type::traits_type::to_char_type(result);
-
-                    bytes_read_out =
-                        bytes_read_out + sizeof(stream_type::char_type);
-                }
+                bytes_read_out = static_cast<ULONG>(
+                    stream.gcount() * sizeof(std::istream::char_type));
             }
-        }
-        else if (stream.bad())
-        {
-            // Not catching EOF case here as it seems reasonable that
-            // the sentry might try to read something and reach EOF
-            throw std::runtime_error("Unable to ready stream for reading");
-        }
 
-        //return stream.rdbuf()->sgetn(
-        //    reinterpret_cast<char*>(buffer),
-        //    buffer_size / sizeof(std::istream::char_type));
+            assert(stream.eof() || bytes_read_out == buffer_size_in_bytes);
+        }
     }
 
     inline void do_ostream_write(
         std::ostream& stream, const void* buffer, ULONG buffer_size_in_bytes,
         ULONG& bytes_written_out)
     {
+        // If there is an error we cannot get a reliable write count, even
+        // if we were to use stream.rdbuf()->sputn, because the failure
+        // might well happen during the flush operation which doesn't let
+        // us find out how much was flushed before failing.
+
         typedef std::ostream stream_type;
 
         bytes_written_out = 0U;
 
-        // Using stream buffer directly for unformatted I/O as stream.write()
-        // doesn't give us the number of characters written.
-        //
-        // We use sputc rather than sputn as the latter is allowed to throw
-        // an exception (from inner call to `overflow` among, presumably,
-        // others: http://stackoverflow.com/a/19105858/67013) part way through
-        // the transfer, which prevents us getting the number of characters
-        // written in the error case. The following code keeps bytes_written_out
-        // updated so that it is correct even if sputc throws an exception
-        // later.
-        stream_type::sentry stream_sentry(stream);
-        if (stream_sentry)
+        stream.write(
+            reinterpret_cast<const char*>(buffer),
+            buffer_size_in_bytes / sizeof(std::ostream::char_type));
+
+        try
         {
-            while (bytes_written_out < buffer_size_in_bytes)
-            {
-                // arithmetic to find position is done in bytes and only
-                // converted to character type when dereferenced.
-                const unsigned char* pos =
-                    reinterpret_cast<const unsigned char*>(buffer) +
-                    bytes_written_out;
-
-                stream_type::traits_type::int_type result =
-                    stream.rdbuf()->sputc(
-                        *reinterpret_cast<const stream_type::char_type*>(pos));
-
-                if (stream_type::traits_type::eq_int_type(
-                    result, stream_type::traits_type::eof()))
-                {
-                    break;
-                }
-                else
-                {
-                    if (!stream.flush())
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        bytes_written_out =
-                            bytes_written_out + sizeof(stream_type::char_type);
-                    }
-                }
-            }
+            stream.flush();
         }
-        else if (stream.bad())
+        catch (const std::exception& e)
         {
-            // Not catching EOF case here as it seems reasonable that
-            // the sentry might try to write something and reach EOF
-            throw std::runtime_error("Unable to ready stream for write");
+            throw com_error(e.what(), STG_E_MEDIUMFULL);
         }
 
-        //return stream.rdbuf()->sputn(
-        //    reinterpret_cast<const char*>(buffer),
-        //    buffer_size / sizeof(std::ostream::char_type));
+        if (stream.good())
+        {
+            bytes_written_out = buffer_size_in_bytes;
+        }
+        else
+        {
+            throw com_error("Writing to stream failed", STG_E_MEDIUMFULL);
+        }
     }
 
     /** Ensure read position updated even in case of exception */
@@ -756,6 +716,61 @@ namespace impl {
             : m_stream(stream), m_traits(stream),
             m_optional_name(optional_name) {}
 
+        /**
+         * Fill the given buffer with data read from the wrapped C++ stream.
+         *
+         * @param [in] buffer
+         *     Destination of bytes to be read.
+         *
+         * @param [in] buffer_size
+         *     Size of `buffer` and, therefore, the maximum number of bytes
+         *     this method will read.  The method may read fewer than this
+         *     number of bytes if the request cannot be fulfilled
+         *     (e.g. end-of-file, error), in which case only the portion of
+         *     `buffer` up to `*read_count_out` bytes from the start
+         *     may be considered valid.
+         *
+         * @param [out] read_count_out
+         *     Number of bytes actually read into `buffer`.  In other words,
+         *     the extent of the valid bytes in `buffer` once this method
+         *     returns.  This value is correct whether the method returns
+         *     success or an error code.
+         * 
+         * @returns
+         *     Error code indicating the success or failure of the method.
+         * @retval `S_OK`
+         *     If `buffer` was completely filled.
+         * @retval `S_FALSE` if EOF reached before `buffer` was filled.
+         *     `*read_count_out` gives the number of bytes that were read.
+         * @retval a COM error code
+         *     If there was a read error.
+         *
+         * Error behaviour rationale
+         * -------------------------
+         *
+         * MSDN says that, if `read_count_out` < `buffer_size`, callers 
+         * should treat both error codes and success codes as meaning
+         * the end-of-file was reached.  However, doing so means they will be
+         * unable to distinguish EOF from a genuine read error.  Therefore,
+         * we make the stronger guarantee that only `S_FALSE` means EOF
+         * while an error code always indicates a read error.
+         * To accommodate callers who follow the documentation on MSDN,
+         * we ensure that the read-count out-variable is correct even if the
+         * wrapped stream encountered an error (`failbit`, `badbit`) or
+         * threw an exception, because the caller may use the byte-count to
+         * decide which bytes of the partial read are valid.
+         *
+         * In the error case, `*read_count_out` may be less than the number
+         * of bytes actually read from the wrapped stream.  This is for
+         * performance reasons: unless we read from the wrapped stream one
+         * byte at a time, there is no way to calculate the the exact number
+         * of bytes read if an exception is thrown part way through reading.
+         * Byte-by-byte reading is hopelessly slow for some applications, such
+         * as an unbuffered stream over a network, so our behaviour is a
+         * pragmatic compromise. We believe it is within the (vaguely)
+         * documented behaviour of `IStream` to treat the out-count in this way
+         * for error cases as the count still delimits a valid region of bytes.
+         */
         virtual HRESULT STDMETHODCALLTYPE Read( 
             void* buffer, ULONG buffer_size, ULONG* read_count_out)
         {
@@ -768,7 +783,6 @@ namespace impl {
 
             try
             {
-
                 if (!buffer)
                 {
                     throw com_error("No buffer given", STG_E_INVALIDPOINTER);
@@ -787,19 +801,72 @@ namespace impl {
 
                 if (*read_count_out < buffer_size)
                 {
+                    assert(m_stream.eof());
+
                     return S_FALSE;
                 }
                 else
                 {
                     assert(*read_count_out == buffer_size);
+                    assert(m_stream.good());
                     return S_OK;
                 }
             }
             COMET_CATCH_CLASS_INTERFACE_BOUNDARY("Read", "adapted_stream");
         }
 
+        /**
+         * Write the given data to the wrapped C++ stream's controlled sequence.
+         *
+         * The wrapped stream is flushed before this method returns to ensure
+         * the data is written to the controlled sequence (and any associated
+         * errors are detected) rather than just to the stream's buffer.
+         * Therefore, best performance is obtained if this method is called with
+         * as much data as possible for the fewest number of flushes.
+         *
+         * @param [in] data
+         *     Bytes to write to the controlled sequence.
+         *
+         * @param [in] data_size
+         *     Size of `data` and the number of bytes to write.
+         *
+         * @param [out] written_count_out
+         *     Number of bytes guaranteed to be written to the controlled
+         *     sequence.  This will be `data_size` if writing succeeded.  If
+         *     an error occurred, this may be fewer than the actual number of
+         *     bytes written to the sequence.
+         * 
+         * @returns
+         *     Error code indicating the success or failure of the method.
+         * @retval `S_OK`
+         *     If `data` was completely written to the wrapped stream's
+         *     controlled sequence.
+         * @retval a COM error code
+         *     If there was a write error.
+         *
+         * Error behaviour rationale
+         * -------------------------
+         *
+         * If writing succeeds, `*written_count_out` equals `data_size`.  If
+         * writing encountered an error `*written_count_out` will be set to zero,
+         * even if some bytes were written out.  We do this for performance
+         * reasons: unless we write the data one byte at a time to the wrapped
+         * stream _and flush the stream after each byte_, the C++ streams don't
+         * provide a way to count the exact number of bytes written to the
+         * stream's controlled sequence.  Byte-by-byte writing is hopelessly
+         * slow for some applications, such as a stream over a network, so our
+         * behaviour is a pragmatic compromise.
+         * We believe it is within the (vaguely) documented behaviour of
+         * `IStream` to treat the out-count in this way for error cases.
+         * It may seem strange that this method even has an out-count if it
+         * was no intended to be meaningful in the error case (the count would
+         * be equal to `data_size` in the success case), however we believe
+         * it was only intended to be meaningful for non-blocking writes to
+         * asynchronous stream (`E_PENDING` would be returned) which this
+         * wrapper is not (see http://bit.ly/1hZGy1L).
+         */
         virtual HRESULT STDMETHODCALLTYPE Write(
-            const void* buffer, ULONG buffer_size, ULONG* written_count_out)
+            const void* data, ULONG data_size, ULONG* written_count_out)
         {
             stream_failure_cleanser<Stream> state_resetter(m_stream);
 
@@ -810,7 +877,7 @@ namespace impl {
 
             try
             {
-                if (!buffer)
+                if (!data)
                 {
                     throw com_error("Buffer not given", STG_E_INVALIDPOINTER);
                 }
@@ -824,16 +891,16 @@ namespace impl {
                     written_count_out = &dummy_written_count;
                 }
 
-                m_traits.do_write(buffer, buffer_size, *written_count_out);
+                m_traits.do_write(data, data_size, *written_count_out);
 
-                if (*written_count_out < buffer_size)
+                if (*written_count_out < data_size)
                 {
                     throw com_error(
                         "Unable to complete write operation", STG_E_MEDIUMFULL);
                 }
                 else
                 {
-                    assert(*written_count_out == buffer_size);
+                    assert(*written_count_out == data_size);
                     return S_OK;
                 }
             }
