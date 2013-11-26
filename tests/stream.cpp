@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE( read_from_stl_istream_buffer_throws )
 
     com_ptr<IStream> s = adapt_stream(stl_stream);
 
-    check_read_results_in(s, 13, string("gob"), E_FAIL);
+    check_read_results_in(s, 13, string(), E_FAIL);
 }
 
 BOOST_AUTO_TEST_CASE( write_to_stl_istream_fails )
@@ -463,11 +463,6 @@ public:
         
         // if no buffer std::streambuf default initialises buffer pointers to
         // NULL
-    }
-
-    virtual ~mock_streambuf()
-    {
-        sync();
     }
 
     /**
@@ -588,7 +583,9 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof )
         has_hresult(
             s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
             STG_E_MEDIUMFULL));
-    BOOST_CHECK_EQUAL(count, 3U);
+
+    // Stream unable to return exact written count
+    BOOST_CHECK_EQUAL(count, 0U);
 
     BOOST_CHECK_EQUAL(buf.controlled_sequence(), "gob");
 }
@@ -601,7 +598,7 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof )
 // but the stream may delay the error till a sync() (after write()).
 // Despite this delay, the behaviour should appear the same from outside the
 // wrapper.
-BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof_delayed )
+BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof_buffered )
 {
     mock_streambuf buf(400);
     buf.mock_behaviour_write_fails_after(3);
@@ -617,7 +614,9 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_eof_delayed )
         has_hresult(
             s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
             STG_E_MEDIUMFULL));
-    BOOST_CHECK_EQUAL(count, 3U);
+
+    // Stream unable to return exact written count
+    BOOST_CHECK_EQUAL(count, 0U);
 
     BOOST_CHECK_EQUAL(buf.controlled_sequence(), "gob");
 }
@@ -642,8 +641,10 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error )
     BOOST_CHECK(
         has_hresult(
             s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
-            E_FAIL));
-    BOOST_CHECK_EQUAL(count, 3U);
+            STG_E_MEDIUMFULL));
+
+    // Stream unable to return exact written count
+    BOOST_CHECK_EQUAL(count, 0U);
 
     BOOST_CHECK_EQUAL(buf.controlled_sequence(), "gob");
 }
@@ -660,7 +661,7 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error )
 // but the stream may delay the error till a sync() (after write()).
 // Despite this delay, the behaviour should appear the same from outside the
 // wrapper.
-BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error_delayed )
+BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error_buffered )
 {
     mock_streambuf buf(400);
     buf.mock_behaviour_write_fails_after(3);
@@ -675,8 +676,10 @@ BOOST_AUTO_TEST_CASE( write_to_stl_ostream_error_delayed )
     BOOST_CHECK(
         has_hresult(
             s->Write(&data[0], static_cast<ULONG>(data.size()), &count), s,
-            E_FAIL));
-    BOOST_CHECK_EQUAL(count, 3U);
+            STG_E_MEDIUMFULL));
+
+    // Stream unable to return exact written count
+    BOOST_CHECK_EQUAL(count, 0U);
 
     BOOST_CHECK_EQUAL(buf.controlled_sequence(), "gob");
 }
