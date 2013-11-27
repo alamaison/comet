@@ -919,7 +919,6 @@ namespace impl {
 
             try
             {
-
                 std::ios_base::seekdir way;
                 if (origin == STREAM_SEEK_CUR)
                 {
@@ -935,25 +934,39 @@ namespace impl {
                 }
                 else
                 {
-                    throw std::invalid_argument(
-                        "Unrecognised stream seek origin");
+                    throw com_error(
+                        "Unrecognised stream seek origin",
+                        STG_E_INVALIDFUNCTION);
                 }
 
                 if (offset.QuadPart > 
                     (std::numeric_limits<std::streamoff>::max)())
                 {
-                    throw std::overflow_error("Seek offset too large");
+                    throw com_error(
+                        "Seek offset too large", STG_E_INVALIDFUNCTION);
                 }
                 else if (offset.QuadPart <
                     (std::numeric_limits<std::streamoff>::min)())
                 {
-                    throw std::underflow_error("Seek offset too small");
+                    throw com_error(
+                        "Seek offset too small", STG_E_INVALIDFUNCTION);
                 }
                 else
                 {
-                    m_traits.do_seek(
-                        static_cast<std::streamoff>(offset.QuadPart),
-                        way, new_stream_position_out);
+                    try
+                    {
+                        m_traits.do_seek(
+                            static_cast<std::streamoff>(offset.QuadPart),
+                            way, new_stream_position_out);
+                    }
+                    // Translate logic_errors (and subtypes) as they
+                    // correspond (very roughly) to the kinds of errors
+                    // for which IStream::Seek is documented to return
+                    // STG_E_INVALIDFUNCTION
+                    catch(const std::logic_error& e)
+                    {
+                        throw com_error(e.what(), STG_E_INVALIDFUNCTION);
+                    }
 
                     return S_OK;
                 }
