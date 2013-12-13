@@ -62,4 +62,51 @@ BOOST_AUTO_TEST_CASE( object_exceptions )
     BOOST_CHECK_EQUAL(error.source().s_str(), "error_object.GetClassID");
 }
 
+
+// Test that error info is correct even when the exception occurs inside a
+// call to a contained object and that call does not have its error info
+// specifically caught and rethrow.
+BOOST_AUTO_TEST_CASE( contained_exceptions_propagate_out )
+{
+    class error_object : public simple_object<IPersist>
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID* /*class_id_out*/)
+        {
+            try
+            {
+                throw com_error("Test error message", E_NOTIMPL);
+            }
+            COMET_CATCH_CLASS_INTERFACE_BOUNDARY("GetClassID", "error_object")
+        }
+    };
+
+    class container : public simple_object<IPersist>
+    {
+    public:
+        container() : m_inner(new error_object()) {}
+
+        virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID* class_id_out)
+        {
+            // Notice, no need to repeat the try/catch in order to propagate
+            // the ErrorInfo to outer interface
+            return m_inner->GetClassID(class_id_out);
+        }
+
+    private:
+        com_ptr<IPersist> m_inner;
+    };
+
+    com_ptr<IPersist> broken_object = new container();
+
+    CLSID clsid = CLSID();
+    HRESULT hr = broken_object->GetClassID(&clsid);
+
+    BOOST_REQUIRE_EQUAL(hr, E_NOTIMPL);
+
+    com_error error = com_error_from_interface(broken_object, hr);
+    BOOST_CHECK_EQUAL(error.s_str(), "Test error message");
+    BOOST_CHECK_EQUAL(error.source().s_str(), "error_object.GetClassID");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
