@@ -104,14 +104,16 @@
 // old code-generation mechanism which we don't support any more.
 #define COMET_CATCH_INTERFACE_BOUNDARY(funcName) \
     catch ( ... ) { \
-        return comet_exception_handler<true>::rethrow( \
-            source_info_t(funcName, comtype<interface_is>::uuid())); \
+        return ::comet::comet_exception_handler<true>::rethrow( \
+            ::comet::source_info_t( \
+                funcName, ::comet::comtype<interface_is>::uuid())); \
     }
 
 #define COMET_CATCH_CLASS_INTERFACE_BOUNDARY(funcName, clsName) \
     catch ( ... ) { \
-        return comet_exception_handler<true>::rethrow( \
-            source_info_t(funcName, comtype<interface_is>::uuid(), clsName)); \
+        return ::comet::comet_exception_handler<true>::rethrow( \
+            ::comet::source_info_t( \
+                funcName, ::comet::comtype<interface_is>::uuid(), clsName)); \
     }
 
 namespace comet {

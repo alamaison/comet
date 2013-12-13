@@ -35,6 +35,7 @@ set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/currency.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/datetime.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/enum.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/object.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ptr.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/registry.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/safearray.cpp
