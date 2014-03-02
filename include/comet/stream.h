@@ -1109,7 +1109,7 @@ namespace impl {
                         &buffer[0], read_this_round, &written_this_round);
                     if (FAILED(hr))
                     {
-                        com_error_from_interface(destination, hr);
+                        throw com_error_from_interface(destination, hr);
                     }
 
                     if (read_this_round < next_chunk_size)
