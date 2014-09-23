@@ -81,4 +81,8 @@ add_library(comet INTERFACE)
 target_include_directories(comet
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_subdirectory(tests)
+option(BUILD_TESTING "Build Comet test suite" ON)
+if(BUILD_TESTING)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
