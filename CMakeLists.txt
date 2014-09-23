@@ -76,13 +76,28 @@ set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/variant_iterator.h)
 
 add_custom_target(comet-src SOURCES ${SOURCES})
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/comet
+  DESTINATION include)
 
 add_library(comet INTERFACE)
 target_include_directories(comet
-  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
 
 option(BUILD_TESTING "Build Comet test suite" ON)
 if(BUILD_TESTING)
   enable_testing()
   add_subdirectory(tests)
 endif()
+
+# Package config
+
+## During package installation
+install(TARGETS comet EXPORT CometConfig) # create CometConfig.cmake
+install(EXPORT CometConfig DESTINATION lib) # install it
+
+## Directly from build tree
+export(TARGETS comet FILE CometConfig.cmake) # create CometConfig.cmake
+export(PACKAGE Comet) # register it
