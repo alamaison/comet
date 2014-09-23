@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2012, 2013 Alexander Lamaison <alexander.lamaison@gmail.com>
+# Copyright (C) 2012, 2013, 2014
+# Alexander Lamaison <alexander.lamaison@gmail.com>
 #
 # This material is provided "as is", with absolutely no warranty
 # expressed or implied. Any use is at your own risk. Permission to
@@ -13,11 +14,11 @@
 # https://github.com/alamaison/comet
 #
 
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.8.11)
 
 project(comet)
 
-set(LIBRARY_HEADERS
+set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/array.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/assert.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/atl_module.h
@@ -74,6 +75,10 @@ set(LIBRARY_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/variant.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/variant_iterator.h)
 
-add_custom_target(comet SOURCES ${LIBRARY_HEADERS})
+add_custom_target(comet-src SOURCES ${SOURCES})
+
+add_library(comet INTERFACE)
+target_include_directories(comet
+  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_subdirectory(tests)
