@@ -80,6 +80,30 @@ install(
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/comet
   DESTINATION include)
 
+# Parse version
+
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/config.h CONFIG_CONTENTS)
+string(
+  REGEX REPLACE ".*#define COMET_MAJOR_VER[ \t]+([0-9]+).*" "\\1"
+  COMET_VERSION_MAJOR "${CONFIG_CONTENTS}")
+string(
+  REGEX REPLACE ".*#define COMET_MINOR_VER[ \t]+([0-9]+).*" "\\1"
+  COMET_VERSION_MINOR "${CONFIG_CONTENTS}")
+string(
+  REGEX REPLACE ".*#define COMET_PATCH_VER[ \t]+([0-9]+).*" "\\1"
+  COMET_VERSION_PATCH "${CONFIG_CONTENTS}")
+
+if(NOT COMET_VERSION_MAJOR MATCHES "^[0-9]+$" OR
+   NOT COMET_VERSION_MINOR MATCHES "^[0-9]+$" OR
+   NOT COMET_VERSION_PATCH MATCHES "^[0-9]+$")
+  message(
+    FATAL_ERROR
+    "Unable to parse comet version from"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/comet/config.h")
+endif()
+
+# Interface library for usage requireents
+
 add_library(comet INTERFACE)
 target_include_directories(comet
   INTERFACE
@@ -101,3 +125,14 @@ install(EXPORT CometConfig DESTINATION lib) # install it
 ## Directly from build tree
 export(TARGETS comet FILE CometConfig.cmake) # create CometConfig.cmake
 export(PACKAGE Comet) # register it
+
+## Versioning
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/CometConfigVersion.cmake
+  VERSION "${COMET_VERSION_MAJOR}.${COMET_VERSION_MINOR}.${COMET_VERSION_PATCH}"
+  COMPATIBILITY SameMajorVersion)
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/CometConfigVersion.cmake
+  DESTINATION lib)

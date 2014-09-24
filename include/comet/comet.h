@@ -156,7 +156,7 @@ See \ref cometautoexpusage for more information on how to use this.
   <li><b>COMET_VARIANT_TRUE,COMET_VARIANT_FALSE</b> : Use in place of VARIANT_TRUE,VARIANT_FALSE to avoid type warnings.</li>
   <li><b>COMET_MAJOR_VER </b> : Major comet version</li>
   <li><b>COMET_MINOR_VER </b> : Minor comet version</li>
-  <li><b>COMET_BUILD </b> : Comet version to compare against (yyyymmdd of distribution)</li>
+  <li><b>COMET_PATCH_VER </b> : Patch comet version</li>
   <li><b>COMET_STRICT_TYPENAME </b> : Used for when stricter compilers require 'typename' keyword and VC6 has an error.</li>
   <li><b>COMET_CONST_TYPE(vartype, varname, value)</b> : Define a typed constant for a class/struct (or use enum if not supported) </li>
   </ul>
