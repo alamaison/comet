@@ -35,16 +35,9 @@ ready to go.
 
 ### CMake
 
-If you're using [CMake] for your project, Comet can set this up for
+If you're using [CMake] for your project, Comet can set itself up for
 you.  Remember you don't have to compile Comet.  The CMake files just
 make it easier to use in an existing CMake project.
-
-Configure Comet.  This will export it to the [user package registry]
-
-    $ cmake -H . -B _builds -DBUILD_TESTING=NO
-
-In your project, locate the exported project and link it with any
-targets that need it.
 
     find_package(Comet REQUIRED CONFIG)
     target_link_libraries(my_project_target PRIVATE comet)
@@ -54,6 +47,41 @@ sense.  It just makes the target aware of Comet's [usage requirements]
 such as the include path.  Referencing Comet this way means you don't
 have to change your build configuration if those requirements change
 in the future.
+
+Of course, you have to make Comet available to your project.  There
+are two ways to do this:
+
+#### ExternalProject
+
+If you have a CMake 'superbuild' to pull in dependencies
+automatically, you can add Comet like this:
+
+    include(ExternalProject)
+
+    ExternalProject_Add(
+        Comet
+        URL https://github.com/alamaison/comet/archive/3.0.0.tar.gz
+        URL_HASH SHA1=dced97055d9ce593ffa52b0ba067ac04b0d96239
+        CMAKE_ARGS "-DBUILD_TESTING=NO"
+        INSTALL_COMMAND "")
+
+    ExternalProject_Add(
+        MyProject DEPENDS Comet
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src
+        INSTALL_COMMAND "")
+
+When you build your super-project, CMake will download Comet, and
+export its configuration to the [user package registry] where your
+project will find it by calling `find_package`.
+
+#### Manually
+
+Download and configure Comet.
+
+    $ cmake -H . -B _builds -DBUILD_TESTING=NO
+
+This will export it to the [user package registry] where your project
+will find it by calling `find_package`.
 
 [user package registry]: http://www.cmake.org/cmake/help/v3.0/manual/cmake-buildsystem.7.html#user-package-registry
 [usage requirements]: http://www.cmake.org/cmake/help/v3.0/manual/cmake-buildsystem.7.html#target-usage-requirements
