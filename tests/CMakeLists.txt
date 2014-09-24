@@ -22,8 +22,6 @@ find_package(
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 
-include_directories(../include)
-
 include(max_warnings.cmake)
 
 
@@ -47,12 +45,13 @@ set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/variant.cpp)
 
 add_executable(unit-tests ${SOURCES})
+target_link_libraries(unit-tests PRIVATE comet)
 
-add_custom_target(RUN_TESTS ALL
-  $<TARGET_FILE:unit-tests>
-  --catch_system_errors
-  --detect_memory_leaks
-  --result_code=no)
+set(TEST_RUNNER_ARGUMENTS
+  --catch_system_errors --detect_memory_leaks
+  --result_code=no --log_level=test_suite)
+
+add_test(test unit-tests ${TEST_RUNNNER_ARGUMENTS})
 
 # Generate tests that library headers are self-containes
 project(comet-include-tests)
@@ -72,3 +71,4 @@ foreach(header_file ${LIBRARY_HEADERS})
 endforeach()
 
 add_executable(include-tests main.cpp ${INCLUDE_TEST_SOURCES})
+target_link_libraries(include-tests PRIVATE comet)

@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2012, 2013 Alexander Lamaison <alexander.lamaison@gmail.com>
+# Copyright (C) 2012, 2013, 2014
+# Alexander Lamaison <alexander.lamaison@gmail.com>
 #
 # This material is provided "as is", with absolutely no warranty
 # expressed or implied. Any use is at your own risk. Permission to
@@ -13,11 +14,11 @@
 # https://github.com/alamaison/comet
 #
 
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.8.11)
 
 project(comet)
 
-set(LIBRARY_HEADERS
+set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/array.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/assert.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/atl_module.h
@@ -74,6 +75,64 @@ set(LIBRARY_HEADERS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/variant.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/variant_iterator.h)
 
-add_custom_target(comet SOURCES ${LIBRARY_HEADERS})
+add_custom_target(comet-src SOURCES ${SOURCES})
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/comet
+  DESTINATION include)
 
-add_subdirectory(tests)
+# Parse version
+
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/config.h CONFIG_CONTENTS)
+string(
+  REGEX REPLACE ".*#define COMET_MAJOR_VER[ \t]+([0-9]+).*" "\\1"
+  COMET_VERSION_MAJOR "${CONFIG_CONTENTS}")
+string(
+  REGEX REPLACE ".*#define COMET_MINOR_VER[ \t]+([0-9]+).*" "\\1"
+  COMET_VERSION_MINOR "${CONFIG_CONTENTS}")
+string(
+  REGEX REPLACE ".*#define COMET_PATCH_VER[ \t]+([0-9]+).*" "\\1"
+  COMET_VERSION_PATCH "${CONFIG_CONTENTS}")
+
+if(NOT COMET_VERSION_MAJOR MATCHES "^[0-9]+$" OR
+   NOT COMET_VERSION_MINOR MATCHES "^[0-9]+$" OR
+   NOT COMET_VERSION_PATCH MATCHES "^[0-9]+$")
+  message(
+    FATAL_ERROR
+    "Unable to parse comet version from"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/comet/config.h")
+endif()
+
+# Interface library for usage requireents
+
+add_library(comet INTERFACE)
+target_include_directories(comet
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+
+option(BUILD_TESTING "Build Comet test suite" ON)
+if(BUILD_TESTING)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
+
+# Package config
+
+## During package installation
+install(TARGETS comet EXPORT CometConfig) # create CometConfig.cmake
+install(EXPORT CometConfig DESTINATION lib) # install it
+
+## Directly from build tree
+export(TARGETS comet FILE CometConfig.cmake) # create CometConfig.cmake
+export(PACKAGE Comet) # register it
+
+## Versioning
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/CometConfigVersion.cmake
+  VERSION "${COMET_VERSION_MAJOR}.${COMET_VERSION_MINOR}.${COMET_VERSION_PATCH}"
+  COMPATIBILITY SameMajorVersion)
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/CometConfigVersion.cmake
+  DESTINATION lib)

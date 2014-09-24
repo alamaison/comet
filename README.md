@@ -31,11 +31,40 @@ How do I use comet?
 -------------------
 
 Just add `comet/include` to your compiler's include path and you are
-ready to go.  The library is documented inline and you can use
-[Doxygen] to generate documentation for it if you want.
+ready to go.
 
-Also, read the following articles.  They are based on Comet v1 but, as
-yet, there isn't much difference.
+### CMake
+
+If you're using [CMake] for your project, Comet can set this up for
+you.  Remember you don't have to compile Comet.  The CMake files just
+make it easier to use in an existing CMake project.
+
+Configure Comet.  This will export it to the [user package registry]
+
+    $ cmake -H . -B _builds -DBUILD_TESTING=NO
+
+In your project, locate the exported project and link it with any
+targets that need it.
+
+    find_package(Comet REQUIRED CONFIG)
+    target_link_libraries(my_project_target PRIVATE comet)
+
+Because Comet is header-only, this doesn't link in the traditional
+sense.  It just makes the target aware of Comet's [usage requirements]
+such as the include path.  Referencing Comet this way means you don't
+have to change your build configuration if those requirements change
+in the future.
+
+[user package registry]: http://www.cmake.org/cmake/help/v3.0/manual/cmake-buildsystem.7.html#user-package-registry
+[usage requirements]: http://www.cmake.org/cmake/help/v3.0/manual/cmake-buildsystem.7.html#target-usage-requirements
+[CMake]: http://www.cmake.org
+
+What about a reference?  Or tutorials?
+--------------------------------------
+
+The library is documented inline and you can use [Doxygen] to generate
+documentation for it if you want.  Also, read the following articles.
+They are based on Comet v1 but, as yet, there isn't much difference.
 
 * [Introducing Comet](http://www.codeproject.com/Articles/5748/Introducing-Comet)
 * [Introduction to Comet](http://www.lambdasoft.dk/comet/introduction/index.htm)
@@ -60,7 +89,7 @@ don't even need that.
 Licensing
 ---------
 
-Copyright © 2000-2012 Sofus Mortensen and others
+Copyright © 2000-2014 Sofus Mortensen and others
 
 This material is provided "as is", with absolutely no warranty
 expressed or implied. Any use is at your own risk. Permission to use
