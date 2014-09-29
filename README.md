@@ -83,7 +83,7 @@ Download and configure Comet.
 This will export it to the [user package registry] where your project
 will find it by calling `find_package`.
 
-[user package registry]: http://www.cmake.org/cmake/help/v3.0/manual/cmake-buildsystem.7.html#user-package-registry
+[user package registry]: http://www.cmake.org/cmake/help/v3.0/manual/cmake-packages.7.html#package-registry
 [usage requirements]: http://www.cmake.org/cmake/help/v3.0/manual/cmake-buildsystem.7.html#target-usage-requirements
 [CMake]: http://www.cmake.org
 
