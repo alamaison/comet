@@ -14,7 +14,7 @@
 # https://github.com/alamaison/comet
 #
 
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.0.0) # Interface libraries introduced in 3
 
 project(comet)
 

@@ -35,9 +35,9 @@ ready to go.
 
 ### CMake
 
-If you're using [CMake] for your project, Comet can set itself up for
-you.  Remember you don't have to compile Comet.  The CMake files just
-make it easier to use in an existing CMake project.
+If you're using [CMake] version 3 or above for your project, Comet can
+set itself up for you.  Remember you don't have to compile Comet.  The
+CMake files just make it easier to use in an existing CMake project.
 
     find_package(Comet REQUIRED CONFIG)
     target_link_libraries(my_project_target PRIVATE comet)
