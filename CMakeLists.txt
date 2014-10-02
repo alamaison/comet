@@ -118,12 +118,13 @@ endif()
 
 # Package config
 
-## During package installation
-install(TARGETS comet EXPORT CometConfig) # create CometConfig.cmake
-install(EXPORT CometConfig DESTINATION lib) # install it
+## During package installation, install CometConfig.cmake
+install(TARGETS comet EXPORT CometConfig)
+install(EXPORT CometConfig NAMESPACE Comet:: DESTINATION lib)
 
 ## Directly from build tree
-export(TARGETS comet FILE CometConfig.cmake) # create CometConfig.cmake
+# create CometConfig.cmake
+export(TARGETS comet NAMESPACE Comet:: FILE CometConfig.cmake)
 export(PACKAGE Comet) # register it
 
 ## Versioning
