@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2012, 2013 Alexander Lamaison <alexander.lamaison@gmail.com>
+# Copyright (C) 2012, 2013, 2014
+# Alexander Lamaison <alexander.lamaison@gmail.com>
 #
 # This material is provided "as is", with absolutely no warranty
 # expressed or implied. Any use is at your own risk. Permission to
@@ -13,19 +14,21 @@
 # https://github.com/alamaison/comet
 #
 
-cmake_minimum_required(VERSION 2.4)
+# Package management ###########################################################
 
-set(Boost_USE_STATIC_LIBS TRUE)
-set(Boost_DETAILED_FAILURE_MSG TRUE)
-find_package(
-  Boost 1.40 REQUIRED COMPONENTS  unit_test_framework)
-link_directories(${Boost_LIBRARY_DIRS})
-include_directories(${Boost_INCLUDE_DIRS})
+include(HunterGate)
+
+HunterGate(
+  URL "https://github.com/ruslo/hunter/archive/v0.5.13.tar.gz"
+  SHA1 "1c274cc91801e648bc09b28446552465d344ede7")
+
+hunter_add_package(Boost COMPONENTS filesystem system test)
+
+################################################################################
+
 
 include(max_warnings.cmake)
 
-
-project(comet-unit-tests)
 
 set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/module.cpp
@@ -45,7 +48,14 @@ set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/variant.cpp)
 
 add_executable(unit-tests ${SOURCES})
-target_link_libraries(unit-tests PRIVATE comet)
+
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost 1.40 REQUIRED
+  COMPONENTS filesystem system unit_test_framework)
+
+target_compile_definitions(unit-tests PRIVATE BOOST_ALL_NO_LIB=1)
+target_link_libraries(unit-tests PRIVATE comet ${Boost_LIBRARIES})
+target_include_directories(unit-tests PRIVATE ${Boost_INCLUDE_DIR})
 
 set(TEST_RUNNER_ARGUMENTS
   --catch_system_errors --detect_memory_leaks

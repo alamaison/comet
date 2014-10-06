@@ -18,6 +18,8 @@ cmake_minimum_required(VERSION 3.0.0) # Interface libraries introduced in 3
 
 project(comet)
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+
 set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/array.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/comet/assert.h
