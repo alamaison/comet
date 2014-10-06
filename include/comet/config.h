@@ -21,7 +21,7 @@
 #ifndef COMET_CONFIG_H
 #define COMET_CONFIG_H
 
-#define COMET_MAJOR_VER 3
+#define COMET_MAJOR_VER 4
 #define COMET_MINOR_VER 0
 #define COMET_PATCH_VER 0
 
