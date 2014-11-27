@@ -122,7 +122,7 @@ endif()
 
 ## During package installation, install CometConfig.cmake
 install(TARGETS comet EXPORT CometConfig)
-install(EXPORT CometConfig NAMESPACE Comet:: DESTINATION lib)
+install(EXPORT CometConfig NAMESPACE Comet:: DESTINATION lib/cmake/Comet)
 
 ## Directly from build tree
 # create CometConfig.cmake
@@ -138,4 +138,4 @@ write_basic_package_version_file(
   COMPATIBILITY SameMajorVersion)
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/CometConfigVersion.cmake
-  DESTINATION lib)
+  DESTINATION lib/cmake/Comet)
