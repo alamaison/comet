@@ -6,6 +6,8 @@ Comet: a modern C++ language binding for COM
 > are developed this way and it makes them much easier to reuse -
 > something we _really_ want to encourage.
 
+[![AppVeyor](https://img.shields.io/appveyor/ci/alamaison/comet.svg)](https://ci.appveyor.com/project/alamaison/comet)
+
 What is Comet?
 --------------
 
