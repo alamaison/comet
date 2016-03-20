@@ -1,12 +1,12 @@
 Comet: a modern C++ language binding for COM
 ==========
 
+[![AppVeyor][badge-appveyor](https://ci.appveyor.com/project/alamaison/comet)
+
 > **IMPORTANT**: You do **not** have to build this library before
 > using it.  It is a header-only library.  Many modern C++ libraries
 > are developed this way and it makes them much easier to reuse -
 > something we _really_ want to encourage.
-
-[![AppVeyor](https://img.shields.io/appveyor/ci/alamaison/comet.svg)](https://ci.appveyor.com/project/alamaison/comet)
 
 What is Comet?
 --------------
@@ -128,3 +128,5 @@ provided the above notices are retained on all copies.  Permission to
 modify the code and to distribute modified code is granted, provided
 the above notices are retained, and a notice that the code was
 modified is included with the above copyright notice.
+
+[badge-appveyor]: https://img.shields.io/appveyor/ci/alamaison/comet.svg
