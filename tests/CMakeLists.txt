@@ -14,21 +14,9 @@
 # https://github.com/alamaison/comet
 #
 
-# Package management ###########################################################
-
-include(HunterGate)
-
-HunterGate(
-  URL "https://github.com/ruslo/hunter/archive/v0.5.13.tar.gz"
-  SHA1 "1c274cc91801e648bc09b28446552465d344ede7")
-
 hunter_add_package(Boost COMPONENTS filesystem system test)
 
-################################################################################
-
-
 include(max_warnings.cmake)
-
 
 set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/module.cpp

@@ -1,0 +1,35 @@
+os: Visual Studio 2015
+
+environment:
+  matrix:
+    - GENERATOR: "Visual Studio 14 2015"
+    - GENERATOR: "Visual Studio 12 2013"
+    - GENERATOR: "Visual Studio 11 2012"
+    - GENERATOR: "Visual Studio 10 2010"
+    - GENERATOR: "Visual Studio 9 2008"
+
+platform:
+  - x86
+  - x64
+
+configuration:
+  - Debug
+  - Release
+
+matrix:
+  allow_failures:
+    - GENERATOR: "Visual Studio 9 2008"
+      platform: x64
+
+build_script:
+  - ps: if($env:PLATFORM -eq "x64") { $env:CMAKE_GEN_SUFFIX=" Win64" }
+  - cmake "-G%GENERATOR%%CMAKE_GEN_SUFFIX%" -H. -B_builds -DHUNTER_CONFIGURATION_TYPES="%CONFIGURATION%"
+  - cmake --build _builds --config "%CONFIGURATION%"
+
+test_script:
+  - ps: cd _builds
+  - ctest -VV -C "%CONFIGURATION%" --output-on-failure
+
+on_failure:
+  - ps: if (Test-Path _builds/CMakeFiles/CMakeOutput.log) { cat _builds/CMakeFiles/CMakeOutput.log }
+  - ps: if (Test-Path _builds/CMakeFiles/CMakeError.log) { cat _builds/CMakeFiles/CMakeError.log }
