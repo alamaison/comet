@@ -23,7 +23,7 @@ matrix:
 
 build_script:
   - ps: if($env:PLATFORM -eq "x64") { $env:CMAKE_GEN_SUFFIX=" Win64" }
-  - cmake "-G%GENERATOR%%CMAKE_GEN_SUFFIX%" -H. -B_builds
+  - cmake "-G%GENERATOR%%CMAKE_GEN_SUFFIX%" -H. -B_builds -DHUNTER_CONFIGURATION_TYPES="%CONFIGURATION%"
   - cmake --build _builds --config "%CONFIGURATION%"
 
 test_script:
