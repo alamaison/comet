@@ -23,7 +23,7 @@
 
 #define COMET_MAJOR_VER 4
 #define COMET_MINOR_VER 0
-#define COMET_PATCH_VER 0
+#define COMET_PATCH_VER 2
 
 #ifndef COMET_BUILD_VERSION_ONLY
 
@@ -37,7 +37,7 @@
 #pragma warning(disable : 4710)
 
 #ifdef _lint // PC/Lint has a few problems with comet.
-# if !defined(_MSC_VER) || _MSC_VER >= 1300
+#if !defined(_MSC_VER) || _MSC_VER >= 1300
 #define COMET_PARTIAL_SPECIALISATION
 #else
 
@@ -51,36 +51,36 @@
 #define COMET_STD_SWAP_NOTHROW throw()
 #define COMET_TL_TRUNC
 #else
-//VC 7.1 support partial specialization
+// VC 7.1 support partial specialization
 #ifdef _MSC_VER
 #endif
 
 #ifdef __ICL
-# define COMET_PARTIAL_SPECIALISATION
-# define COMET_NESTED_TEMPLATES
+#define COMET_PARTIAL_SPECIALISATION
+#define COMET_NESTED_TEMPLATES
 #else
-# ifdef _MSC_VER
-#  if _MSC_VER < 1300
+#ifdef _MSC_VER
+#if _MSC_VER < 1300
 // Versions less than VC7 can't handle the rethrow & catch exception trick.
-#    define COMET_DISABLE_EXCEPTION_RETHROW_CATCH
-#  else // _MSC_VER >= 1300
-#    define COMET_GOOD_RECURSIVE_STRUCT
-#    define COMET_CONST_MEMBER_INIT
-#    if _MSC_VER >= 1310
-#      define COMET_PARTIAL_SPECIALISATION
-#      define COMET_NESTED_TEMPLATES
-#    endif
-#  endif
+#define COMET_DISABLE_EXCEPTION_RETHROW_CATCH
+#else // _MSC_VER >= 1300
+#define COMET_GOOD_RECURSIVE_STRUCT
+#define COMET_CONST_MEMBER_INIT
+#if _MSC_VER >= 1310
+#define COMET_PARTIAL_SPECIALISATION
+#define COMET_NESTED_TEMPLATES
+#endif
+#endif
 
-# endif
+#endif
 #if defined(_UNICODE) && !defined(UNICODE)
-        #define UNICODE
+#define UNICODE
 #endif
 #endif
 
 #ifdef __BORLANDC__
-#pragma warning(disable: 8027)
-#pragma warning(disable: 8026)
+#pragma warning(disable : 8027)
+#pragma warning(disable : 8026)
 #define COMET_PARTIAL_SPECIALISATION
 #define COMET_NESTED_TEMPLATES
 #define COMET_BROKEN_WTYPES
@@ -110,7 +110,6 @@
 #define NOCOMATTRIBUTE
 #endif
 #endif
-
 
 // Use COMET_STRICT_TYPENAME only where MSVC barfs on stricter typename usage
 // required by GCC.
@@ -146,13 +145,17 @@
 #include <iterator>
 #ifdef COMET_PARTIAL_SPECIALISATION
 // this code to "detect" STLport is stolen from <boost/config.hpp>
-//#if __SGI_STL_PORT >= 0x400 || __SGI_STL_PORT >= 0x321 && defined(__STL_USE_NAMESPACES)
+//#if __SGI_STL_PORT >= 0x400 || __SGI_STL_PORT >= 0x321 &&
+//defined(__STL_USE_NAMESPACES)
 #ifdef __SGI_STL
 #define COMET_STD_ITERATOR
 #else
 #ifdef __MINGW32__
 __STL_BEGIN_NAMESPACE
-template <class _Tp, class _Distance>struct iterator:  bidirectional_iterator<_Tp,_Distance>{};
+template <class _Tp, class _Distance>
+struct iterator : bidirectional_iterator<_Tp, _Distance>
+{
+};
 __STL_END_NAMESPACE
 #endif // __MINGW32__
 #endif
@@ -185,13 +188,13 @@ __STL_END_NAMESPACE
 
 #ifdef _UNICODE
 #ifndef UNICODE
-#define UNICODE         // UNICODE is used by Windows headers
+#define UNICODE // UNICODE is used by Windows headers
 #endif
 #endif
 
 #ifdef UNICODE
 #ifndef _UNICODE
-#define _UNICODE        // _UNICODE is used by C-runtime/MFC headers
+#define _UNICODE // _UNICODE is used by C-runtime/MFC headers
 #endif
 #endif
 
@@ -217,25 +220,37 @@ __STL_END_NAMESPACE
 #undef uuid_t
 #endif
 
-#define COMET_DECLARE_SWAP(TYPE) template<> inline void swap(TYPE &x, TYPE &y)\
-    {\
-    x.swap(y);\
+#define COMET_DECLARE_SWAP(TYPE)                                               \
+    template <>                                                                \
+    inline void swap(TYPE& x, TYPE& y)                                         \
+    {                                                                          \
+        x.swap(y);                                                             \
     }
 
-const unsigned short COMET_VARIANT_TRUE  = (unsigned short)(0xffff);
+const unsigned short COMET_VARIANT_TRUE = (unsigned short)(0xffff);
 const unsigned short COMET_VARIANT_FALSE = 0;
 
 #define COMET_NOTUSED(x) x
 #ifndef COMET_CONST_MEMBER_INIT
-# define COMET_CONST_TYPE(vartype, varname,value) enum { varname = value };
-# define COMET_CONST_GROUP enum {
-# define COMET_CONST_ENTRY(vartype, varname,value) varname = value,
-# define COMET_CONST_GROUP_END };
+#define COMET_CONST_TYPE(vartype, varname, value)                              \
+    enum                                                                       \
+    {                                                                          \
+        varname = value                                                        \
+    };
+#define COMET_CONST_GROUP                                                      \
+    enum                                                                       \
+    {
+#define COMET_CONST_ENTRY(vartype, varname, value) varname = value,
+#define COMET_CONST_GROUP_END                                                  \
+    }                                                                          \
+    ;
 #else
-# define COMET_CONST_TYPE(vartype, varname,value) static const vartype varname = value;
-# define COMET_CONST_ENTRY(vartype, varname,value) COMET_CONST_TYPE(vartype, varname, value);
-# define COMET_CONST_GROUP
-# define COMET_CONST_GROUP_END
+#define COMET_CONST_TYPE(vartype, varname, value)                              \
+    static const vartype varname = value;
+#define COMET_CONST_ENTRY(vartype, varname, value)                             \
+    COMET_CONST_TYPE(vartype, varname, value);
+#define COMET_CONST_GROUP
+#define COMET_CONST_GROUP_END
 #endif
 #endif // COMET_BUILD_VERSION_ONLY
 #endif
