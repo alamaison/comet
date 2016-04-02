@@ -25,45 +25,75 @@
 #include <functional>
 
 // add identity, select1st, and select2nd.
-#if !defined(__SGI_STL_PORT) && !defined(__MINGW32__)
-namespace std {
-    /** \internal
-     */
-    template<typename T> struct identity : public unary_function<T, T> {
-        T operator()(const T& t) { return t; }
-    };
+#if !defined(__SGI_STL_PORT) && !defined(__MINGW32__) &&                       \
+    (!defined(_MSC_VER) || _MSC_VER < 1600)
+namespace std
+{
+/** \internal
+ */
+template <typename T>
+struct identity : public unary_function<T, T>
+{
+    T operator()(const T& t)
+    {
+        return t;
+    }
+};
 
-    /** \internal
-     */
-    template<typename T> struct select1st : public unary_function<typename T::first_type, T> {
-        typename T::first_type operator()(const T& t) { return t.first; }
-    };
+/** \internal
+ */
+template <typename T>
+struct select1st : public unary_function<typename T::first_type, T>
+{
+    typename T::first_type operator()(const T& t)
+    {
+        return t.first;
+    }
+};
 
-    /** \internal
-     */
-    template<typename T> struct select2nd : public unary_function<typename T::second_type, T> {
-        typename T::second_type operator()(const T& t) { return t.second; }
-    };
+/** \internal
+ */
+template <typename T>
+struct select2nd : public unary_function<typename T::second_type, T>
+{
+    typename T::second_type operator()(const T& t)
+    {
+        return t.second;
+    }
+};
 }
 #else
 #include <functional>
 #endif
 
-template<typename T> class delete_fun : public std::unary_function<T, void> {
-    public:
-        void operator()(T& x) { delete x; }
+template <typename T>
+class delete_fun : public std::unary_function<T, void>
+{
+public:
+    void operator()(T& x)
+    {
+        delete x;
+    }
 };
 
-template<typename T> class delete2nd_fun : public std::unary_function<T, void> {
-    public:
-        void operator()(T& x) { delete x.second; }
+template <typename T>
+class delete2nd_fun : public std::unary_function<T, void>
+{
+public:
+    void operator()(T& x)
+    {
+        delete x.second;
+    }
 };
 
-template<typename T> class delete1st_fun : public std::unary_function<T, void> {
-    public:
-        void operator()(T& x) { delete x.first; }
+template <typename T>
+class delete1st_fun : public std::unary_function<T, void>
+{
+public:
+    void operator()(T& x)
+    {
+        delete x.first;
+    }
 };
-
-
 
 #endif

@@ -42,8 +42,13 @@ find_package(Boost 1.40 REQUIRED
   COMPONENTS filesystem system unit_test_framework)
 
 target_compile_definitions(unit-tests PRIVATE BOOST_ALL_NO_LIB=1)
-target_link_libraries(unit-tests PRIVATE comet ${Boost_LIBRARIES})
 target_include_directories(unit-tests PRIVATE ${Boost_INCLUDE_DIR})
+target_link_libraries(unit-tests PRIVATE ${Boost_LIBRARIES})
+
+target_link_libraries(unit-tests PRIVATE comet)
+# Force comet target include dirs to come before others (which may included installed comet)
+target_include_directories(unit-tests
+  BEFORE PRIVATE $<TARGET_PROPERTY:comet,INTERFACE_INCLUDE_DIRECTORIES>)
 
 set(TEST_RUNNER_ARGUMENTS
   --catch_system_errors --detect_memory_leaks
